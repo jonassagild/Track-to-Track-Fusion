@@ -1,1 +1,2 @@
-stonesoup
+stonesoup~=0.1b1
+numpy~=1.19.1
