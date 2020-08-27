@@ -17,6 +17,9 @@ from stonesoup.types.track import Track
 
 from utils import open_object
 
+from data_fusion import track_to_track_association
+from data_fusion import track_to_track_fusion
+
 # load ground truth and the measurements
 ground_truth = open_object.open_object("../scenarios/scenario1/ground_truth.pk1")
 measurements_radar = open_object.open_object("../scenarios/scenario1/measurements_radar.pk1")
@@ -58,21 +61,21 @@ updater_ais = KalmanUpdater(measurement_model_ais)
 prior_radar = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
 prior_ais = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
 
-track_radar = Track()
+tracks_radar = Track()
 for measurement in measurements_radar:
     prediction = predictor_radar.predict(prior_radar, timestamp=measurement.timestamp)
     hypothesis = SingleHypothesis(prediction, measurement)
     post = updater_radar.update(hypothesis)
-    track_radar.append(post)
-    prior_radar = track_radar[-1]
+    tracks_radar.append(post)
+    prior_radar = tracks_radar[-1]
 
-track_ais = Track()
+tracks_ais = Track()
 for measurement in measurements_ais:
     prediction = predictor_radar.predict(prior_ais, timestamp=measurement.timestamp)
     hypothesis = SingleHypothesis(prediction, measurement)
     post = updater_ais.update(hypothesis)
-    track_ais.append(post)
-    prior_ais = track_ais[-1]
+    tracks_ais.append(post)
+    prior_ais = tracks_ais[-1]
 
 # plot
 fig = plt.figure(figsize=(10, 6))
@@ -93,7 +96,7 @@ ax.scatter([state.state_vector[0] for state in measurements_ais],
            color='r',
            label='Measurements AIS')
 
-for state in track_radar:
+for state in tracks_radar:
     w, v = np.linalg.eig(measurement_model_radar.matrix() @ state.covar @ measurement_model_radar.matrix().T)
     max_ind = np.argmax(w)
     min_ind = np.argmin(w)
@@ -105,7 +108,7 @@ for state in track_radar:
                       color='b')
     ax.add_artist(ellipse)
 
-for state in track_ais:
+for state in tracks_ais:
     w, v = np.linalg.eig(measurement_model_ais.matrix() @ state.covar @ measurement_model_ais.matrix().T)
     max_ind = np.argmax(w)
     min_ind = np.argmin(w)
@@ -134,9 +137,27 @@ ellipse = Ellipse(xy=(0, 0),
 ax.add_patch(ellipse)
 
 ax.legend()
-ax.set_title("Kalman filter tracking")  # todo figure out tile
-fig.show()
+ax.set_title("Kalman filter tracking")  # todo figure out title
+# fig.show()
 
+# FOR NOW: run track_to_track_association here, todo change pipeline flow
+
+# FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
+
+# todo figure out how to time this
+# start simple. For each AIS track, try to find a radar track with the same timestamp. The pipeline will be different
+# later, so it doesn't really mather
+
+for track_ais in tracks_ais:
+    # find a track in tracks_radar with the same timestamp
+    for track_radar in tracks_radar:
+        if track_ais.timestamp == track_radar.timestamp:
+            same_target = track_to_track_association.test_association(track_radar, track_ais)
+            if same_target:
+                fused_track = track_to_track_fusion.fuse(track_radar, track_ais)
+            break
+
+# todo do something with the fused tracks
 
 
 
