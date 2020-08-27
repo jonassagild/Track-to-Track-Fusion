@@ -73,4 +73,8 @@ store_object.store_object(truth, "../scenarios/scenario1/ground_truth.pk1")
 store_object.store_object(measurements_radar, "../scenarios/scenario1/measurements_radar.pk1")
 store_object.store_object(measurements_AIS, "../scenarios/scenario1/measurements_ais.pk1")
 store_object.store_object(start_time, "../scenarios/scenario1/start_time.pk1")
+store_object.store_object(measurement_model_radar, "../scenarios/scenario1/measurement_model_radar.pk1")
+store_object.store_object(measurement_model_ais, "../scenarios/scenario1/measurement_model_ais.pk1")
+store_object.store_object(transition_model, "../scenarios/scenario1/transition_model.pk1")
+
 
