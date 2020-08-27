@@ -46,7 +46,7 @@ measurement_model_radar = LinearGaussian(
 )
 
 # Specify measurement model for AIS
-measurement_model_AIS = LinearGaussian(
+measurement_model_ais = LinearGaussian(
     ndim_state=4,
     mapping=(0, 2),
     noise_covar=np.array([[1, 0],
@@ -65,12 +65,12 @@ state_num = 0
 for state in truth:
     state_num += 1
     if not state_num % 2:  # measurement every second timestep
-        measurement = measurement_model_AIS.function(state, noise=True)
+        measurement = measurement_model_ais.function(state, noise=True)
         measurements_AIS.append(Detection(measurement, timestamp=state.timestamp))
 
 # save the ground truth and the measurements for the radar and the AIS
 store_object.store_object(truth, "../scenarios/scenario1/ground_truth.pk1")
 store_object.store_object(measurements_radar, "../scenarios/scenario1/measurements_radar.pk1")
-store_object.store_object(measurements_AIS, "../scenarios/scenario1/measurements_AIS.pk1")
-
+store_object.store_object(measurements_AIS, "../scenarios/scenario1/measurements_ais.pk1")
+store_object.store_object(start_time, "../scenarios/scenario1/start_time.pk1")
 
