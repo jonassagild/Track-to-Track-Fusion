@@ -77,6 +77,20 @@ for measurement in measurements_ais:
     tracks_ais.append(post)
     prior_ais = tracks_ais[-1]
 
+# FOR NOW: run track_to_track_association here, todo change pipeline flow
+# FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
+# todo handle fusion when one track predicts and the other updates. (or both predicts)
+tracks_fused = []
+for track_ais in tracks_ais:
+    # find a track in tracks_radar with the same timestamp
+    for track_radar in tracks_radar:
+        if track_ais.timestamp == track_radar.timestamp:
+            same_target = track_to_track_association.test_association(track_radar, track_ais, 0.01)
+            if same_target:
+                fused_posterior, fused_covar = track_to_track_fusion.fuse(track_radar, track_ais)
+                tracks_fused.append((fused_posterior, fused_covar))
+            break
+
 # plot
 fig = plt.figure(figsize=(10, 6))
 ax = fig.add_subplot(1, 1, 1)
@@ -90,12 +104,13 @@ ax.plot([state.state_vector[0] for state in ground_truth],
 ax.scatter([state.state_vector[0] for state in measurements_radar],
            [state.state_vector[1] for state in measurements_radar],
            color='b',
-           label='Measurements radar')
+           label='Measurements Radar')
 ax.scatter([state.state_vector[0] for state in measurements_ais],
            [state.state_vector[1] for state in measurements_ais],
            color='r',
            label='Measurements AIS')
 
+# add ellipses to the posteriors
 for state in tracks_radar:
     w, v = np.linalg.eig(measurement_model_radar.matrix() @ state.covar @ measurement_model_radar.matrix().T)
     max_ind = np.argmax(w)
@@ -120,7 +135,19 @@ for state in tracks_ais:
                       color='r')
     ax.add_patch(ellipse)
 
-# add two empty ellipses to add legend todo do this less ugly
+for track_fused in tracks_fused:
+    w, v = np.linalg.eig(measurement_model_ais.matrix() @ track_fused[1] @ measurement_model_ais.matrix().T)
+    max_ind = np.argmax(w)
+    min_ind = np.argmin(w)
+    orient = np.arctan2(v[1, max_ind], v[0, max_ind])
+    ellipse = Ellipse(xy=(track_fused[0][0], track_fused[0][2]),
+                      width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
+                      angle=np.rad2deg(orient),
+                      alpha=0.5,
+                      color='green')
+    ax.add_patch(ellipse)
+
+# add ellipses to add legend todo do this less ugly
 ellipse = Ellipse(xy=(0, 0),
                   width=0,
                   height=0,
@@ -135,37 +162,18 @@ ellipse = Ellipse(xy=(0, 0),
                   alpha=0.2,
                   label='Posterior Radar')
 ax.add_patch(ellipse)
+ellipse = Ellipse(xy=(0, 0),
+                  width=0,
+                  height=0,
+                  color='green',
+                  alpha=0.5,
+                  label='Posterior Fused')
+ax.add_patch(ellipse)
 
 ax.legend()
-ax.set_title("Kalman filter tracking")  # todo figure out title
-# fig.show()
-
-# FOR NOW: run track_to_track_association here, todo change pipeline flow
-
-# FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
-
-# todo figure out how to time this
-# start simple. For each AIS track, try to find a radar track with the same timestamp. The pipeline will be different
-# later, so it doesn't really mather
-
-for track_ais in tracks_ais:
-    # find a track in tracks_radar with the same timestamp
-    for track_radar in tracks_radar:
-        if track_ais.timestamp == track_radar.timestamp:
-            same_target = track_to_track_association.test_association(track_radar, track_ais)
-            if same_target:
-                fused_track = track_to_track_fusion.fuse(track_radar, track_ais)
-            break
-
-# todo do something with the fused tracks
-
-
-
-
-
-
-
-
+ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
+fig.show()
+fig.savefig("../results/KF_tracking_and_fusion_under_error_independence_assumption.pdf")
 
 
 
