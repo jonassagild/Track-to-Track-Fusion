@@ -1,3 +1,4 @@
 stonesoup~=0.1b1
 numpy~=1.19.1
 matplotlib~=3.3.1
+scipy~=1.5.2
