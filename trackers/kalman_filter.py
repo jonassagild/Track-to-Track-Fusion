@@ -173,7 +173,7 @@ ax.add_patch(ellipse)
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
 fig.show()
-fig.savefig("../results/KF_tracking_and_fusion_under_error_independence_assumption.pdf")
+fig.savefig("../results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.pdf")
 
 
 
