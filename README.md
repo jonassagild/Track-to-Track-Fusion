@@ -8,3 +8,6 @@ Track to track fusion under the error independence assumption
 ![test](results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.pdf?raw=true)
 
 ![test](results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.pdf)
+
+![GitHub Logo](/results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.pdf)
+Format: ![Alt Text](url)
