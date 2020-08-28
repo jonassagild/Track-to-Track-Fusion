@@ -1,43 +1,28 @@
 """track_to_track_association
 
 The module tests two tracks for track association. It uses hypothesis testing to decide whether the two tracks are of
-the same target.
-todo write more
+the same target. The implementation assumes independent tracks. See report for more mathematical derivation.
 """
 import numpy as np
+from scipy.stats.distributions import chi2
 
 
-def test_association(track1, track2):
+def test_association(track1, track2, alpha):
     """
     Checks whether the tracks are from the same target
-    :param track1:
-    :param track2:
+    :param track1: track to check for association
+    :param track2: track to check for association
+    :param alpha: desired confidence interval
     :return:
     """
     delta_estimates = track1.state_vector - track2.state_vector
     error_delta_estimates = delta_estimates  # as the difference of the true states is 0 if it is the same target
     error_delta_estimates_covar = track1.covar + track2.covar  # under the error independence assumption
 
-    D = error_delta_estimates.tranpose() * np.linalg.inv(error_delta_estimates_covar) * error_delta_estimates
-    # Accept H0 if D <= D_alpha
+    d = error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates
 
-    alpha = 0.01
+    # 4 degrees of freedom as we have 4 dimensions in the state vector
+    d_alpha = chi2.ppf((1 - alpha), df=4)
 
-    # how many degrees of freedom to use on the chi-squared distribution? 4 as we have 4 dimensions in the state
-    # vector
-
-    
-
-    print("test")
-    pass
-
-
-def main():
-    # load tracks and run test_association for each track
-
-
-    pass
-
-
-if __name__ == "__main__":
-    main()
+    # Accept H0 if d <= d_alpha
+    return d <= d_alpha
