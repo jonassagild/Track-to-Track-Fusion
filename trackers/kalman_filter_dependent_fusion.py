@@ -21,24 +21,24 @@ from data_fusion import track_to_track_association
 from data_fusion import track_to_track_fusion
 
 # load ground truth and the measurements
-ground_truth = open_object.open_object("../scenarios/scenario1/ground_truth.pk1")
-measurements_radar = open_object.open_object("../scenarios/scenario1/measurements_radar.pk1")
-measurements_ais = open_object.open_object("../scenarios/scenario1/measurements_ais.pk1")
+ground_truth = open_object.open_object("../scenarios/scenario2/ground_truth.pk1")
+measurements_radar = open_object.open_object("../scenarios/scenario2/measurements_radar.pk1")
+measurements_ais = open_object.open_object("../scenarios/scenario2/measurements_ais.pk1")
 
 # load start_time
-start_time = open_object.open_object("../scenarios/scenario1/start_time.pk1")
+start_time = open_object.open_object("../scenarios/scenario2/start_time.pk1")
 
 # same transition models (radar uses same as original)
 transition_model_radar = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.01), ConstantVelocity(0.01)])
-transition_model_ais = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.02), ConstantVelocity(0.02)])
+transition_model_ais = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.01), ConstantVelocity(0.01)])
 
 # same measurement models as used when generating the measurements
 # Specify measurement model for radar
 measurement_model_radar = LinearGaussian(
     ndim_state=4,  # number of state dimensions
     mapping=(0, 2),  # mapping measurement vector index to state index
-    noise_covar=np.array([[3, 0],  # covariance matrix for Gaussian PDF
-                          [0, 3]])
+    noise_covar=np.array([[1, 0],  # covariance matrix for Gaussian PDF
+                          [0, 1]])
 )
 
 # Specify measurement model for AIS
