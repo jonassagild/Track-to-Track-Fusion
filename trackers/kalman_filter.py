@@ -86,9 +86,9 @@ for track_ais in tracks_ais:
     # find a track in tracks_radar with the same timestamp
     for track_radar in tracks_radar:
         if track_ais.timestamp == track_radar.timestamp:
-            same_target = track_to_track_association.test_association(track_radar, track_ais, 0.01)
+            same_target = track_to_track_association.test_association_independent_tracks(track_radar, track_ais, 0.01)
             if same_target:
-                fused_posterior, fused_covar = track_to_track_fusion.fuse(track_radar, track_ais)
+                fused_posterior, fused_covar = track_to_track_fusion.fuse_independent_tracks(track_radar, track_ais)
                 tracks_fused.append((fused_posterior, fused_covar))
             break
 
