@@ -20,6 +20,8 @@ from utils import open_object
 from data_fusion import track_to_track_association
 from data_fusion import track_to_track_fusion
 
+from trackers.calc_cross_cov_estimate_error import calc_cross_cov_estimate_error
+
 # load ground truth and the measurements
 ground_truth = open_object.open_object("../scenarios/scenario2/ground_truth.pk1")
 measurements_radar = open_object.open_object("../scenarios/scenario2/measurements_radar.pk1")
@@ -61,18 +63,53 @@ updater_ais = KalmanUpdater(measurement_model_ais)
 prior_radar = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
 prior_ais = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]), timestamp=start_time)
 
+# create list for storing kalman gains
+kf_gains_radar = []
+kf_gains_ais = []
+
+# create list for storing transition_noise_covar
+transition_covars_radar = []
+transition_covars_ais = []
+
+# create list for storing tranisition matrixes
+transition_matrixes_radar = []
+transition_matrixes_ais = []
+
+# create list for storing tracks
 tracks_radar = Track()
+tracks_ais = Track()
+
+# track
 for measurement in measurements_radar:
     prediction = predictor_radar.predict(prior_radar, timestamp=measurement.timestamp)
     hypothesis = SingleHypothesis(prediction, measurement)
+    # calculate the kalman gain
+    hypothesis.measurement_prediction = updater_radar.predict_measurement(hypothesis.prediction,
+                                                                          measurement_model=measurement_model_radar)
+    post_cov, kalman_gain = updater_radar._posterior_covariance(hypothesis)
+    kf_gains_radar.append(kalman_gain)
+    # get the transition model covar
+    predict_over_interval = measurement.timestamp - prior_radar.timestamp
+    transition_covars_ais.append(transition_model_ais.covar(time_interval=predict_over_interval))
+    transition_matrixes_ais.append(transition_model_ais.matrix(time_interval=predict_over_interval))
+    # update
     post = updater_radar.update(hypothesis)
     tracks_radar.append(post)
     prior_radar = tracks_radar[-1]
 
-tracks_ais = Track()
 for measurement in measurements_ais:
     prediction = predictor_radar.predict(prior_ais, timestamp=measurement.timestamp)
     hypothesis = SingleHypothesis(prediction, measurement)
+    # calculate the kalman gain
+    hypothesis.measurement_prediction = updater_ais.predict_measurement(hypothesis.prediction,
+                                                                        measurement_model=measurement_model_ais)
+    post_cov, kalman_gain = updater_ais._posterior_covariance(hypothesis)
+    kf_gains_ais.append(kalman_gain)
+    # get the transition model covar
+    predict_over_interval = measurement.timestamp - prior_radar.timestamp
+    transition_covars_radar.append(transition_model_radar.covar(time_interval=predict_over_interval))
+    transition_matrixes_radar.append(transition_model_radar.matrix(time_interval=predict_over_interval))
+    # update
     post = updater_ais.update(hypothesis)
     tracks_ais.append(post)
     prior_ais = tracks_ais[-1]
@@ -81,15 +118,39 @@ for measurement in measurements_ais:
 # FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
 # todo handle fusion when one track predicts and the other updates. (or both predicts) (Can't be done with the theory
 #  described in the article)
+
+cross_cov_ij = []
+cross_cov_ji = []
+cross_cov_ji.append(np.zeros(4))
+cross_cov_ij.append(np.zeros(4))
+
+# TODO change flow to assume that the indexes decide whether its from the same iterations
+# use indexes to loop through tracks, kf_gains etc
+
 tracks_fused = []
-for track_ais in tracks_ais:
-    # find a track in tracks_radar with the same timestamp
-    for track_radar in tracks_radar:
-        if track_ais.timestamp == track_radar.timestamp:
-            same_target = track_to_track_association.test_association(track_radar, track_ais, 0.01)
-            if same_target:
-                fused_posterior, fused_covar = track_to_track_fusion.fuse(track_radar, track_ais)
-                tracks_fused.append((fused_posterior, fused_covar))
+for i in range(1, len(tracks_radar)):
+    # we assume that the indexes correlates with the timestamps. I.e. that the lists are 'synchronized'
+    # check to make sure
+    if tracks_ais[i].timestamp == tracks_radar[i].timestamp:
+        # calculate the cross-covariance estimation error
+        cross_cov_ji.append(calc_cross_cov_estimate_error(
+            measurement_model_ais.matrix(), measurement_model_radar.matrix(), kf_gains_ais[i], kf_gains_radar[i],
+            transition_matrixes_ais[i], transition_covars_ais[i], cross_cov_ji[i-1]
+        ))
+        cross_cov_ij.append(calc_cross_cov_estimate_error(
+            measurement_model_radar.matrix(), measurement_model_ais.matrix(), kf_gains_radar[i], kf_gains_ais[i],
+            transition_matrixes_radar[i], transition_covars_ais[i], cross_cov_ij[i-1]
+        ))
+        # TODO check whether these are the same, just transposed
+
+        # test for track association
+        same_target = track_to_track_association.test_association_dependent_tracks(tracks_radar[i], tracks_ais[i],
+                                                                                   cross_cov_ij[i],
+                                                                                   cross_cov_ji[i], 0.01)
+        if same_target:
+            fused_posterior, fused_covar = track_to_track_fusion.fuse_dependent_tracks(tracks_radar[i], tracks_ais[
+                i], cross_cov_ij[i], cross_cov_ji[i])
+            tracks_fused.append((fused_posterior, fused_covar))
             break
 
 # plot
@@ -174,16 +235,4 @@ ax.add_patch(ellipse)
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
 fig.show()
-fig.savefig("../results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.svg")
-
-
-
-
-
-
-
-
-
-
-
-
+fig.savefig("../results/scenario2/KF_tracking_and_fusion_under_error_independence_assumption.svg")
