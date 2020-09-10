@@ -1,13 +1,12 @@
 """track_to_track_fusion
 
-The module fuses two tracks under the error independence assumption. See the report for derivations.
-todo
+The module fuses two tracks. See the report for derivations.
 """
 import numpy as np
 from stonesoup.types.update import GaussianStateUpdate
 
 
-def fuse(track1, track2):
+def fuse_independent_tracks(track1, track2):
     """
     fuses the tracks todo
     :param track1:

@@ -1,13 +1,13 @@
 """track_to_track_association
 
 The module tests two tracks for track association. It uses hypothesis testing to decide whether the two tracks are of
-the same target. The implementation assumes independent tracks. See report for more mathematical derivation.
+the same target. See report for more mathematical derivation.
 """
 import numpy as np
 from scipy.stats.distributions import chi2
 
 
-def test_association(track1, track2, alpha):
+def test_association_independent_tracks(track1, track2, alpha):
     """
     Checks whether the tracks are from the same target
     :param track1: track to check for association
