@@ -1,6 +1,6 @@
-""" kalman_filter
+""" kalman_filter_dependent_fusion
 
-TODO
+Uses the test and using taking the dependence into account. Follows Bar-Shaloms formulas for doing so.
 """
 
 import numpy as np
