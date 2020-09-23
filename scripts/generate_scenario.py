@@ -20,7 +20,7 @@ from stonesoup.models.measurement.linear import LinearGaussian
 from utils import store_object
 
 
-def generate_scenario(seed=1996):
+def generate_scenario(seed=1996, permanent_save=True):
     # specify seed to be able repeat example
     start_time = datetime.now()
 
@@ -66,17 +66,24 @@ def generate_scenario(seed=1996):
     state_num = 0
     for state in truth:
         state_num += 1
-        if not state_num % 2:  # measurement every second timestep
+        if not state_num % 2:  # measurement every second time step
             measurement = measurement_model_ais.function(state, noise=True)
             measurements_ais.append(Detection(measurement, timestamp=state.timestamp))
 
+    if permanent_save:
+        save_folder = seed.__str__()
+    else:
+        save_folder = "temp"
+
     # save the ground truth and the measurements for the radar and the AIS
-    store_object.store_object(truth, "../scenarios/scenario1/ground_truth.pk1")
-    store_object.store_object(measurements_radar, "../scenarios/scenario1/measurements_radar.pk1")
-    store_object.store_object(measurements_ais, "../scenarios/scenario1/measurements_ais.pk1")
-    store_object.store_object(start_time, "../scenarios/scenario1/start_time.pk1")
-    store_object.store_object(measurement_model_radar, "../scenarios/scenario1/measurement_model_radar.pk1")
-    store_object.store_object(measurement_model_ais, "../scenarios/scenario1/measurement_model_ais.pk1")
-    store_object.store_object(transition_model, "../scenarios/scenario1/transition_model.pk1")
+    store_object.store_object(truth, "../scenarios/scenario1/" + save_folder + "/", "ground_truth.pk1")
+    store_object.store_object(measurements_radar, "../scenarios/scenario1/" + save_folder + "/", "measurements_radar.pk1")
+    store_object.store_object(measurements_ais, "../scenarios/scenario1/" + save_folder + "/", "measurements_ais.pk1")
+    store_object.store_object(start_time, "../scenarios/scenario1/" + save_folder + "/", "/start_time.pk1")
+    store_object.store_object(measurement_model_radar, "../scenarios/scenario1/" + save_folder
+                              + "/", "measurement_model_radar.pk1")
+    store_object.store_object(measurement_model_ais, "../scenarios/scenario1/" + save_folder
+                              + "/", "measurement_model_ais.pk1")
+    store_object.store_object(transition_model, "../scenarios/scenario1/" + save_folder + "/", "transition_model.pk1")
 
 
