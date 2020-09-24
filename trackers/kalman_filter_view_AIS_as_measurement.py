@@ -22,6 +22,56 @@ from scripts.generate_scenario import generate_scenario
 from utils import open_object
 from utils import calc_metrics
 
+
+class kf_ais_as_measurement:
+    """
+    todo
+    """
+    def __init__(self, measurements_radar, measurements_ais, start_time, sigma_process, sigma_meas_radar=3,
+                 sigma_meas_ais=1):
+        """
+
+        :param measurements_radar:
+        :param measurements_ais:
+        :param start_time:
+        :param sigma_process: scalar
+        :param sigma_meas_radar: scalar
+        :param sigma_meas_ais: scalar
+        """
+        # measurements and start time
+        self.measurements_radar = measurements_radar
+        self.measurements_ais = measurements_ais
+        self.start_time = start_time
+
+        # transition model
+        self.transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process),
+                                                                       ConstantVelocity(sigma_process)])
+
+        # same measurement models as used when generating the measurements
+        # Specify measurement model for radar
+        self.measurement_model_radar = LinearGaussian(
+            ndim_state=4,  # number of state dimensions
+            mapping=(0, 2),  # mapping measurement vector index to state index
+            noise_covar=np.array([[sigma_meas_radar, 0],  # covariance matrix for Gaussian PDF
+                                  [0, sigma_meas_radar]])
+        )
+
+        # Specify measurement model for AIS
+        self.measurement_model_ais = LinearGaussian(
+            ndim_state=4,
+            mapping=(0, 2),
+            noise_covar=np.array([[sigma_meas_ais, 0],
+                                  [0, sigma_meas_ais]])
+        )
+
+        # specify predictor
+        self.predictor = KalmanPredictor(transition_model)
+
+        # specify updaters
+        self.updater_radar = KalmanUpdater(measurement_model_radar)
+        self.updater_ais = KalmanUpdater(measurement_model_ais)
+
+
 seed = 2000
 
 # generate scenario
