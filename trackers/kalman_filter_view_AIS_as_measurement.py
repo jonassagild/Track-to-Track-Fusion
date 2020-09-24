@@ -4,9 +4,11 @@ Views the AIS measurement as a "pure" measurement. Uses the update step of the k
 Radar measurements.
 """
 import numpy as np
+import scipy
 
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
+
 from stonesoup.models.measurement.linear import LinearGaussian
 from stonesoup.models.transition.linear import CombinedLinearGaussianTransitionModel, ConstantVelocity
 from stonesoup.predictor.kalman import KalmanPredictor
@@ -15,15 +17,25 @@ from stonesoup.updater.kalman import KalmanUpdater
 from stonesoup.types.hypothesis import SingleHypothesis
 from stonesoup.types.track import Track
 
+from scripts.generate_scenario import generate_scenario
+
 from utils import open_object
+from utils import calc_metrics
+
+seed = 2000
+
+# generate scenario
+generate_scenario(2000, permanent_save=True)
+
+data_folder = "../scenarios/scenario1/" + str(seed) + "/"
 
 # load ground truth and the measurements
-ground_truth = open_object.open_object("../scenarios/scenario1/ground_truth.pk1")
-measurements_radar = open_object.open_object("../scenarios/scenario1/measurements_radar.pk1")
-measurements_ais = open_object.open_object("../scenarios/scenario1/measurements_ais.pk1")
+ground_truth = open_object.open_object(data_folder + "ground_truth.pk1")
+measurements_radar = open_object.open_object(data_folder + "measurements_radar.pk1")
+measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
 
 # load start_time
-start_time = open_object.open_object("../scenarios/scenario1/start_time.pk1")
+start_time = open_object.open_object(data_folder + "start_time.pk1")
 
 # only one transition model
 transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.01), ConstantVelocity(0.01)])
@@ -145,8 +157,38 @@ ax.set_title("Kalman filter tracking and fusion when AIS is viewed as a measurem
 fig.show()
 fig.savefig("../results/scenario1/KF_tracking_and_fusion_viewing_ais_as_measurement.svg")
 
+# calculate some metrics
+# NEES
+nees = calc_metrics.calc_nees(tracks_fused, ground_truth)
+anees = calc_metrics.calc_anees(nees)
 
+# ANEES confidence interval
+alpha = 0.95
+num_tracks = len(tracks_fused)
+ci_nees = scipy.stats.chi2.interval(alpha, 4)
+ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4*num_tracks)) / num_tracks
 
+print(ci_nees)
+print(ci_anees)
+print(anees)
+
+# plot ANEES and confidence interval
+fig_ci_nees = plt.figure(figsize=(10, 6))
+ax_ci_nees = fig_ci_nees.add_subplot(1, 1, 1)
+ax_ci_nees.set_xlabel("$x$")
+ax_ci_nees.set_ylabel("$y$")
+
+# plot upper and lower confidence intervals
+ax_ci_nees.plot([0, num_tracks], [ci_nees[0], ci_nees[0]], color='red')
+ax_ci_nees.plot([0, num_tracks], [ci_nees[1], ci_nees[1]], color='red')
+
+# plot the NEES values
+ax_ci_nees.plot(list(range(0, num_tracks)), nees, marker='+', ls='None', color='blue')
+
+fig_ci_nees.show()
+
+# todo: decide whether to use the tuning process as in the sensor fusion course
+# todo: why not?
 
 
 
