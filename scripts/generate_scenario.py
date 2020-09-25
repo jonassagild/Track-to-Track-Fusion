@@ -20,14 +20,15 @@ from stonesoup.models.measurement.linear import LinearGaussian
 from utils import store_object
 
 
-def generate_scenario(seed=1996, permanent_save=True):
+def generate_scenario(seed=1996, permanent_save=True, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
     # specify seed to be able repeat example
     start_time = datetime.now()
 
     np.random.seed(seed)
 
     # combine two 1-D CV models to create a 2-D CV model
-    transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(0.01), ConstantVelocity(0.01)])
+    transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_transition),
+                                                              ConstantVelocity(sigma_transition)])
 
     # starting at 0,0 and moving NE
     truth = GroundTruthPath([GroundTruthState([0, 1, 0, 1], timestamp=start_time)])
@@ -43,16 +44,16 @@ def generate_scenario(seed=1996, permanent_save=True):
     measurement_model_radar = LinearGaussian(
         ndim_state=4,  # number of state dimensions
         mapping=(0, 2),  # mapping measurement vector index to state index
-        noise_covar=np.array([[3, 0],  # covariance matrix for Gaussian PDF
-                              [0, 3]])
+        noise_covar=np.array([[sigma_meas_radar, 0],  # covariance matrix for Gaussian PDF
+                              [0, sigma_meas_radar]])
     )
 
     # Specify measurement model for AIS
     measurement_model_ais = LinearGaussian(
         ndim_state=4,
         mapping=(0, 2),
-        noise_covar=np.array([[1, 0],
-                              [0, 1]])
+        noise_covar=np.array([[sigma_meas_ais, 0],
+                              [0, sigma_meas_ais]])
     )
 
     # generate "radar" measurements
