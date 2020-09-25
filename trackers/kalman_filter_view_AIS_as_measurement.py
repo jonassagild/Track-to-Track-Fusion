@@ -23,11 +23,11 @@ from utils import open_object
 from utils import calc_metrics
 
 
-class kf_ais_as_measurement:
+class kalman_filter_ais_as_measurement:
     """
     todo
     """
-    def __init__(self, measurements_radar, measurements_ais, start_time, prior: GaussianState, sigma_process,
+    def __init__(self, measurements_radar, measurements_ais, start_time, prior: GaussianState, sigma_process=0.01,
                  sigma_meas_radar=3,
                  sigma_meas_ais=1):
         """
@@ -73,7 +73,7 @@ class kf_ais_as_measurement:
         self.updater_radar = KalmanUpdater(self.measurement_model_radar)
         self.updater_ais = KalmanUpdater(self.measurement_model_ais)
 
-        # create prior todo move later
+        # create prior todo move later and probably rename
         self.prior = prior
 
     def track(self):
@@ -85,7 +85,7 @@ class kf_ais_as_measurement:
             # using the AIS measurement
             measurement_radar = self.measurements_radar[measurement_idx]
 
-            prediction = self.predictor.predict(prior, timestamp=measurement_radar.timestamp)
+            prediction = self.predictor.predict(self.prior, timestamp=measurement_radar.timestamp)
             hypothesis = SingleHypothesis(prediction, measurement_radar)
             post = self.updater_radar.update(hypothesis)
 
@@ -168,47 +168,10 @@ class kf_ais_as_measurement:
                           label='Posterior Radar')
         ax.add_patch(ellipse)
 
+        # todo move or remove
         ax.legend()
         ax.set_title("Kalman filter tracking and fusion when AIS is viewed as a measurement")
         fig.show()
         fig.savefig("../results/scenario1/KF_tracking_and_fusion_viewing_ais_as_measurement.svg")
-
-
-
-# # calculate some metrics
-# # NEES
-# nees = calc_metrics.calc_nees(tracks_fused, ground_truth)
-# anees = calc_metrics.calc_anees(nees)
-#
-# # ANEES confidence interval
-# alpha = 0.95
-# num_tracks = len(tracks_fused)
-# ci_nees = scipy.stats.chi2.interval(alpha, 4)
-# ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4*num_tracks)) / num_tracks
-#
-# print(ci_nees)
-# print(ci_anees)
-# print(anees)
-#
-# # plot ANEES and confidence interval
-# fig_ci_nees = plt.figure(figsize=(10, 6))
-# ax_ci_nees = fig_ci_nees.add_subplot(1, 1, 1)
-# ax_ci_nees.set_xlabel("$x$")
-# ax_ci_nees.set_ylabel("$y$")
-#
-# # plot upper and lower confidence intervals
-# ax_ci_nees.plot([0, num_tracks], [ci_nees[0], ci_nees[0]], color='red')
-# ax_ci_nees.plot([0, num_tracks], [ci_nees[1], ci_nees[1]], color='red')
-#
-# # plot the NEES values
-# ax_ci_nees.plot(list(range(0, num_tracks)), nees, marker='+', ls='None', color='blue')
-#
-# fig_ci_nees.show()
-
-# todo: decide whether to use the tuning process as in the sensor fusion course
-# todo: why not?
-
-
-
 
 
