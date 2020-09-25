@@ -13,6 +13,7 @@ from utils import calc_metrics
 from scripts.generate_scenario import generate_scenario
 
 from trackers.kalman_filter_view_AIS_as_measurement import kalman_filter_ais_as_measurement
+from trackers.kalman_filter_independent_fusion import kalman_filter_independent_fusion
 
 # loop starts here
 # loop over seeds?
@@ -37,13 +38,20 @@ for seed in range(start_seed, end_seed):
     start_time = open_object.open_object(data_folder + "start_time.pk1")
 
     # prior
-    prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5])**2, timestamp=start_time)
+    prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
 
     kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
-                                             sigma_process=0.01,
-                               sigma_meas_radar=2.5, sigma_meas_ais=0.5)
+                                                             sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+    tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
 
-    tracks_fused, tracks_radar = kf_ais_as_measurement.track()
+    kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
+                                                             sigma_process_radar=0.01, sigma_process_ais=0.01,
+                                                             sigma_meas_radar=3, sigma_meas_ais=1)
+    tracks_fused_independent, _, _ = kf_independent_fusion.track()
+
+    # TODO fix structure
+    # TODO fix that the size of tracks fused under independence and dependence have different size than ais as
+    #  measurement
 
     # Calculate some metrics
     stats_individual = {}
@@ -51,16 +59,14 @@ for seed in range(start_seed, end_seed):
     stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused, ground_truth)
     # calculate ANEES
     stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
-
     stats_individual["seed"] = seed
-
     stats_overall.append(stats_individual)
 
 # plot some results
 num_tracks = len(tracks_fused)
 alpha = 0.95
 ci_nees = scipy.stats.chi2.interval(alpha, 4)
-ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4*num_tracks)) / num_tracks
+ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks)) / num_tracks
 
 # plot ANEES and confidence interval
 fig_ci_anees = plt.figure(figsize=(10, 6))
