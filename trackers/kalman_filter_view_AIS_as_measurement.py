@@ -28,8 +28,7 @@ class kalman_filter_ais_as_measurement:
     todo
     """
     def __init__(self, measurements_radar, measurements_ais, start_time, prior: GaussianState, sigma_process=0.01,
-                 sigma_meas_radar=3,
-                 sigma_meas_ais=1):
+                 sigma_meas_radar=3, sigma_meas_ais=1):
         """
 
         :param measurements_radar:
@@ -99,12 +98,11 @@ class kalman_filter_ais_as_measurement:
 
             # save fused track
             self.tracks_fused.append(post)
-            prior = self.tracks_fused[-1]
+            self.prior = self.tracks_fused[-1]
         return self.tracks_fused, self.tracks_radar
 
     def plot(self, ground_truth):
         """
-
         :return:
         """
         # PLOT
