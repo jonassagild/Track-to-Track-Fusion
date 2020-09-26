@@ -20,8 +20,8 @@ def calc_cross_cov_estimate_error(h_i, h_j, kalman_gain_i, kalman_gain_j, f, q, 
     :return:
     """
     # TODO needs refactoring when decided whether to use semantics or mathematical characters. (uses both currently)
-    cross_cov = (np.eye(prev_cross_cov.shape[0]) - kalman_gain_i @ h_i) @ np.linalg.inv(f @ prev_cross_cov @ f.T + q) \
-                @ (np.eye(prev_cross_cov.shape[0]) - kalman_gain_j @ h_j).T
+    cross_cov = (np.eye(prev_cross_cov.shape[0]) - kalman_gain_i @ h_i) @ (f @ prev_cross_cov @ f.T + q) @ \
+                (np.eye(prev_cross_cov.shape[0]) - kalman_gain_j @ h_j).T
     return cross_cov
 
 
