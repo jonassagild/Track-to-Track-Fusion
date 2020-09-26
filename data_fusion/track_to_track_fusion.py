@@ -47,7 +47,7 @@ def fuse_dependent_tracks(track1, track2, cross_covar_ij, cross_covar_ji):
     P_ji = cross_covar_ji
 
     # fusion equation under the error independence assumption
-    fused_posterior = x_i + (P_i + P_j) @ np.linalg.inv(P_i + P_j - P_ij - P_ji) @ (x_j - x_i)
+    fused_posterior = x_i + (P_i - P_ij) @ np.linalg.inv(P_i + P_j - P_ij - P_ji) @ (x_j - x_i)
 
     # covariance fusion equation
     fused_covar = P_i - (P_i - P_ij) @ np.linalg.inv(P_i + P_j - P_ij - P_ji) @ (P_i - P_ji)
