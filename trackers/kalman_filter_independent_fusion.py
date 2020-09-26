@@ -86,9 +86,10 @@ class kalman_filter_independent_fusion:
 
     def _fuse_tracks(self, tracks_radar, tracks_ais):
         tracks_fused = []
-        for track_ais in tracks_ais:
+        for track_radar in tracks_radar:
             # find a track in tracks_radar with the same timestamp
-            for track_radar in tracks_radar:
+            estimate = track_radar
+            for track_ais in tracks_ais:
                 if track_ais.timestamp == track_radar.timestamp:
                     # same_target = track_to_track_association.test_association_independent_tracks(track_radar, track_ais,
                     #                                                                              0.01)
@@ -96,8 +97,9 @@ class kalman_filter_independent_fusion:
                     if same_target:
                         fused_posterior, fused_covar = track_to_track_fusion.fuse_independent_tracks(track_radar,
                                                                                                      track_ais)
-                        tracks_fused.append((fused_posterior, fused_covar))
+                        estimate = GaussianState(fused_posterior, fused_covar, timestamp=track_radar.timestamp)
                     break
+            tracks_fused.append(estimate)
         return tracks_fused
 
 
