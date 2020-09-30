@@ -13,6 +13,9 @@ from utils import calc_metrics
 from utils.scenario_generator import generate_scenario_2
 from trackers.kalman_filter_view_AIS_as_measurement import kalman_filter_ais_as_measurement
 from trackers.kalman_filter_independent_fusion import kalman_filter_independent_fusion
+from trackers.kalman_filter_dependent_fusion import kalman_filter_dependent_fusion
+
+from utils.save_figures import save_figure
 
 # loop starts here
 # loop over seeds?
@@ -39,13 +42,19 @@ for seed in range(start_seed, end_seed):
     # prior
     prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
 
+    # trackers
     kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+                                                             sigma_process=0.01, sigma_meas_radar=3.5,
+                                                             sigma_meas_ais=1.3)
     kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process_radar=0.01, sigma_process_ais=0.02,
+                                                             sigma_process_radar=0.01, sigma_process_ais=0.01,
                                                              sigma_meas_radar=3.5, sigma_meas_ais=1.3)
+    kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
+                                                         sigma_process_radar=0.01, sigma_process_ais=0.02,
+                                                         sigma_meas_radar=3.5, sigma_meas_ais=1.3)
 
     tracks_fused_independent, _, _ = kf_independent_fusion.track()
+    tracks_fused_dependent, _, _ = kf_dependent_fusion.track()
     tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
 
     # Calculate some metrics
@@ -56,6 +65,15 @@ for seed in range(start_seed, end_seed):
     stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
     stats_individual["seed"] = seed
     stats_individual["fusion_type"] = "independent"
+    stats_overall.append(stats_individual)
+
+    stats_individual = {}
+    # calculate NEES
+    stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent, ground_truth)
+    # calculate ANEES
+    stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+    stats_individual["seed"] = seed
+    stats_individual["fusion_type"] = "dependent"
     stats_overall.append(stats_individual)
 
     stats_individual = {}
@@ -85,16 +103,18 @@ ax_ci_anees.plot([start_seed, end_seed], [ci_anees[0], ci_anees[0]], color='red'
 ax_ci_anees.plot([start_seed, end_seed], [ci_anees[1], ci_anees[1]], color='red')
 
 anees_independent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "independent"]
+anees_dependent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "dependent"]
 anees_ais_as_measurement = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "ais as measurement"]
 
 # plot the ANEES values
 ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_independent, marker='+', ls='None', color='blue',
                  label='Independent')
+# ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_dependent, marker='+', ls='None', color='red',
+#                  label='Dependent')
 ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_ais_as_measurement, marker='+', ls='None', color='green',
                  label='AIS as measurement')
 
 ax_ci_anees.legend()
 fig_ci_anees.show()
 
-
-
+save_figure("../results/scenario2/1996", "monte_carlo_2_trackers.pdf", fig_ci_anees)
