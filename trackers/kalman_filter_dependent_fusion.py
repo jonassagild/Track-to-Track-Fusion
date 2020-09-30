@@ -117,7 +117,7 @@ class kalman_filter_dependent_fusion:
             # update
             post = self.updater_radar.update(hypothesis)
             tracks_radar.append(post)
-            self.prior_radar = tracks_radar[-1]
+            self.prior_radar = post
 
         for measurement in self.measurements_ais:
             prediction = self.predictor_radar.predict(self.prior_ais, timestamp=measurement.timestamp)
@@ -134,7 +134,7 @@ class kalman_filter_dependent_fusion:
             # update
             post = self.updater_ais.update(hypothesis)
             tracks_ais.append(post)
-            self.prior_ais = tracks_ais[-1]
+            self.prior_ais = post
 
         # FOR NOW: run track_to_track_association here, todo change pipeline flow
         # FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
@@ -176,9 +176,9 @@ class kalman_filter_dependent_fusion:
                                                                                                tracks_ais[i],
                                                                                                cross_cov_ij[i],
                                                                                                cross_cov_ji[i])
-                    tracks_fused.append((fused_posterior, fused_covar))
-        return tracks_radar, tracks_ais, tracks_fused
-
+                    estimate = GaussianState(fused_posterior, fused_covar, timestamp=tracks_ais[i].timestamp)
+                    tracks_fused.append(estimate)
+        return tracks_fused, tracks_ais, tracks_radar
 
 # # plot
 # fig = plt.figure(figsize=(10, 6))
