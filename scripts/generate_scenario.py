@@ -72,19 +72,19 @@ def generate_scenario(seed=1996, permanent_save=True, sigma_transition=0.01, sig
             measurements_ais.append(Detection(measurement, timestamp=state.timestamp))
 
     if permanent_save:
-        save_folder = seed.__str__()
+        save_folder_name = seed.__str__()
     else:
-        save_folder = "temp"
+        save_folder_name = "temp"
+
+    save_folder = "../scenarios/scenario1/" + save_folder_name + "/"
 
     # save the ground truth and the measurements for the radar and the AIS
-    store_object.store_object(truth, "../scenarios/scenario1/" + save_folder + "/", "ground_truth.pk1")
-    store_object.store_object(measurements_radar, "../scenarios/scenario1/" + save_folder + "/", "measurements_radar.pk1")
-    store_object.store_object(measurements_ais, "../scenarios/scenario1/" + save_folder + "/", "measurements_ais.pk1")
-    store_object.store_object(start_time, "../scenarios/scenario1/" + save_folder + "/", "/start_time.pk1")
-    store_object.store_object(measurement_model_radar, "../scenarios/scenario1/" + save_folder
-                              + "/", "measurement_model_radar.pk1")
-    store_object.store_object(measurement_model_ais, "../scenarios/scenario1/" + save_folder
-                              + "/", "measurement_model_ais.pk1")
-    store_object.store_object(transition_model, "../scenarios/scenario1/" + save_folder + "/", "transition_model.pk1")
+    store_object.store_object(truth, save_folder, "ground_truth.pk1")
+    store_object.store_object(measurements_radar, save_folder, "measurements_radar.pk1")
+    store_object.store_object(measurements_ais, save_folder, "measurements_ais.pk1")
+    store_object.store_object(start_time, save_folder, "start_time.pk1")
+    store_object.store_object(measurement_model_radar, save_folder, "measurement_model_radar.pk1")
+    store_object.store_object(measurement_model_ais, save_folder, "measurement_model_ais.pk1")
+    store_object.store_object(transition_model, save_folder, "transition_model.pk1")
 
 
