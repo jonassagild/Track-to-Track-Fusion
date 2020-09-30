@@ -17,9 +17,6 @@ from stonesoup.updater.kalman import KalmanUpdater
 from stonesoup.types.hypothesis import SingleHypothesis
 from stonesoup.types.track import Track
 
-from utils import open_object
-from utils import calc_metrics
-
 
 class kalman_filter_ais_as_measurement:
     """
@@ -78,7 +75,7 @@ class kalman_filter_ais_as_measurement:
         self.tracks_radar = Track()
         for measurement_idx in range(0, len(self.measurements_radar)):
             # radar measurement every timestep, AIS measurement every second
-            # first predict, then update with radar measurement. Then every second iteration, perform an extra update step
+            # first predict, then update with radar measurement. Then every iteration, perform an extra update step
             # using the AIS measurement
             measurement_radar = self.measurements_radar[measurement_idx]
 
@@ -89,14 +86,13 @@ class kalman_filter_ais_as_measurement:
             # save radar track
             self.tracks_radar.append(post)
 
-            if measurement_idx % 2:
-                measurement_ais = self.measurements_ais[measurement_idx // 2]
-                hypothesis = SingleHypothesis(post, measurement_ais)
-                post = self.updater_ais.update(hypothesis)
+            measurement_ais = self.measurements_ais[measurement_idx]
+            hypothesis = SingleHypothesis(post, measurement_ais)
+            post = self.updater_ais.update(hypothesis)
 
             # save fused track
             self.tracks_fused.append(post)
-            self.prior = self.tracks_fused[-1]
+            self.prior = post
         return self.tracks_fused, self.tracks_radar
 
     def plot(self, ground_truth):
