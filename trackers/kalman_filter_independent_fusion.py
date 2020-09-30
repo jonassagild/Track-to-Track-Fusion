@@ -26,14 +26,26 @@ class kalman_filter_independent_fusion:
     """
     def __init__(self, measurements_radar, measurements_ais, start_time, prior: GaussianState,
                  sigma_process_radar=0.01, sigma_process_ais=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
-        # same transition models (radar uses same as original)
+        """
+
+        :param measurements_radar:
+        :param measurements_ais:
+        :param start_time:
+        :param prior:
+        :param sigma_process_radar:
+        :param sigma_process_ais:
+        :param sigma_meas_radar:
+        :param sigma_meas_ais:
+        """
+        self.start_time = start_time
+        self.measurements_radar = measurements_radar
+        self.measurements_ais = measurements_ais
+
+        # transition models (process models)
         self.transition_model_radar = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process_radar),
                                                                              ConstantVelocity(sigma_process_radar)])
         self.transition_model_ais = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process_ais),
                                                                            ConstantVelocity(sigma_process_ais)])
-        self.start_time = start_time
-        self.measurements_radar = measurements_radar
-        self.measurements_ais = measurements_ais
 
         # Specify measurement model for radar
         self.measurement_model_radar = LinearGaussian(
