@@ -10,8 +10,7 @@ from matplotlib import pyplot as plt
 from utils import open_object
 from utils import calc_metrics
 
-from scripts.generate_scenario import generate_scenario
-
+from utils.scenario_generator import generate_scenario_2
 from trackers.kalman_filter_view_AIS_as_measurement import kalman_filter_ais_as_measurement
 from trackers.kalman_filter_independent_fusion import kalman_filter_independent_fusion
 
@@ -24,12 +23,12 @@ num_mc_iterations = end_seed - start_seed
 stats_overall = []
 for seed in range(start_seed, end_seed):
     # generate scenario
-    generate_scenario(seed=seed, permanent_save=False, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+    generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
 
     folder = "temp"  # temp instead of seed, as it is not a permanent save
 
     # load ground truth and the measurements
-    data_folder = "../scenarios/scenario1/" + folder + "/"
+    data_folder = "../scenarios/scenario2/" + folder + "/"
     ground_truth = open_object.open_object(data_folder + "ground_truth.pk1")
     measurements_radar = open_object.open_object(data_folder + "measurements_radar.pk1")
     measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
@@ -42,28 +41,35 @@ for seed in range(start_seed, end_seed):
 
     kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
                                                              sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
-    tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
-
     kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process_radar=0.01, sigma_process_ais=0.01,
-                                                             sigma_meas_radar=3, sigma_meas_ais=1)
-    tracks_fused_independent, _, _ = kf_independent_fusion.track()
+                                                             sigma_process_radar=0.01, sigma_process_ais=0.02,
+                                                             sigma_meas_radar=3.5, sigma_meas_ais=1.3)
 
-    # TODO fix structure
-    # TODO fix that the size of tracks fused under independence and dependence have different size than ais as
-    #  measurement
+    tracks_fused_independent, _, _ = kf_independent_fusion.track()
+    tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
 
     # Calculate some metrics
     stats_individual = {}
     # calculate NEES
-    stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused, ground_truth)
+    stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_independent, ground_truth)
     # calculate ANEES
     stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
     stats_individual["seed"] = seed
+    stats_individual["fusion_type"] = "independent"
     stats_overall.append(stats_individual)
 
+    stats_individual = {}
+    # calculate NEES
+    stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_ais_as_measurement, ground_truth)
+    # calculate ANEES
+    stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+    stats_individual["seed"] = seed
+    stats_individual["fusion_type"] = "ais as measurement"
+    stats_overall.append(stats_individual)
+
+
 # plot some results
-num_tracks = len(tracks_fused)
+num_tracks = len(tracks_fused_independent)
 alpha = 0.95
 ci_nees = scipy.stats.chi2.interval(alpha, 4)
 ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks)) / num_tracks
@@ -71,16 +77,24 @@ ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks)) / num_trac
 # plot ANEES and confidence interval
 fig_ci_anees = plt.figure(figsize=(10, 6))
 ax_ci_anees = fig_ci_anees.add_subplot(1, 1, 1)
-ax_ci_anees.set_xlabel("$x$")
-ax_ci_anees.set_ylabel("$y$")
+ax_ci_anees.set_xlabel("MC seed")
+ax_ci_anees.set_ylabel("ANEES")
 
 # plot upper and lower confidence intervals
-ax_ci_anees.plot([0, num_mc_iterations], [ci_anees[0], ci_anees[0]], color='red')
-ax_ci_anees.plot([0, num_mc_iterations], [ci_anees[1], ci_anees[1]], color='red')
+ax_ci_anees.plot([start_seed, end_seed], [ci_anees[0], ci_anees[0]], color='red')
+ax_ci_anees.plot([start_seed, end_seed], [ci_anees[1], ci_anees[1]], color='red')
 
-anees = [stat['ANEES'] for stat in stats_overall]
+anees_independent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "independent"]
+anees_ais_as_measurement = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "ais as measurement"]
 
 # plot the ANEES values
-ax_ci_anees.plot(list(range(0, num_mc_iterations)), anees, marker='+', ls='None', color='blue')
+ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_independent, marker='+', ls='None', color='blue',
+                 label='Independent')
+ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_ais_as_measurement, marker='+', ls='None', color='green',
+                 label='AIS as measurement')
 
+ax_ci_anees.legend()
 fig_ci_anees.show()
+
+
+

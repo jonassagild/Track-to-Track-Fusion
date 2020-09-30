@@ -17,8 +17,6 @@ from stonesoup.updater.kalman import KalmanUpdater
 from stonesoup.types.hypothesis import SingleHypothesis
 from stonesoup.types.track import Track
 
-from scripts.generate_scenario import generate_scenario
-
 from utils import open_object
 from utils import calc_metrics
 
