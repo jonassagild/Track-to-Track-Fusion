@@ -36,6 +36,9 @@ for seed in range(start_seed, end_seed):
     measurements_radar = open_object.open_object(data_folder + "measurements_radar.pk1")
     measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
 
+    # remove the first element of ground_truth (because we only fuse the n-1 last with dependent fusion)
+    ground_truth = ground_truth[-(len(ground_truth)-1):]
+
     # load start_time
     start_time = open_object.open_object(data_folder + "start_time.pk1")
 
@@ -56,6 +59,12 @@ for seed in range(start_seed, end_seed):
     tracks_fused_independent, _, _ = kf_independent_fusion.track()
     tracks_fused_dependent, _, _ = kf_dependent_fusion.track()
     tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
+
+    # fix the length of the fusions to dependent (as it is a bit shorter)
+    num_tracks = len(tracks_fused_dependent)
+    # get the num_tracks last elements
+    tracks_fused_independent = tracks_fused_independent[-num_tracks:]
+    tracks_fused_ais_as_measurement = tracks_fused_ais_as_measurement[-num_tracks:]
 
     # Calculate some metrics
     stats_individual = {}
@@ -85,7 +94,6 @@ for seed in range(start_seed, end_seed):
     stats_individual["fusion_type"] = "ais as measurement"
     stats_overall.append(stats_individual)
 
-
 # plot some results
 num_tracks = len(tracks_fused_independent)
 alpha = 0.95
@@ -109,12 +117,12 @@ anees_ais_as_measurement = [stat['ANEES'] for stat in stats_overall if stat["fus
 # plot the ANEES values
 ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_independent, marker='+', ls='None', color='blue',
                  label='Independent')
-# ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_dependent, marker='+', ls='None', color='red',
-#                  label='Dependent')
+ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_dependent, marker='+', ls='None', color='red',
+                 label='Dependent')
 ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_ais_as_measurement, marker='+', ls='None', color='green',
                  label='AIS as measurement')
 
 ax_ci_anees.legend()
 fig_ci_anees.show()
 
-save_figure("../results/scenario2/1996", "monte_carlo_2_trackers.pdf", fig_ci_anees)
+save_figure("../results/scenario2/1996", "monte_carlo.pdf", fig_ci_anees)
