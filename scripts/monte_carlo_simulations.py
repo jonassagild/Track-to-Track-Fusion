@@ -182,7 +182,7 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     fig_ci_average_anees.show()
 
     fig_name = "process_" + str(sigma_process) + "_AIS_" + str(sigma_meas_ais) + "_Radar_" \
-               + str(sigma_meas_radar) + ".svg"
+               + str(sigma_meas_radar) + ".pdf"
     save_figure("../results/scenario2/mc_average_anees", fig_name, fig_ci_average_anees)
 
     # print some results

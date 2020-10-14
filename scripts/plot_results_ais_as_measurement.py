@@ -36,7 +36,7 @@ start_time = open_object.open_object(data_folder + "start_time.pk1")
 prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
 
 kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process=0.01, sigma_meas_radar=3.5, sigma_meas_ais=1.3)
+                                                         sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
 
 # hacky way; just so its easy to reuse code
 measurement_model_radar = kf_ais_as_measurement.measurement_model_radar

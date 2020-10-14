@@ -37,8 +37,8 @@ prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestam
 
 # tracker
 kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process_radar=0.01, sigma_process_ais=0.02,
-                                                         sigma_meas_radar=3.5, sigma_meas_ais=1.3)
+                                                         sigma_process_radar=0.01, sigma_process_ais=0.0,
+                                                         sigma_meas_radar=3, sigma_meas_ais=1)
 
 # hacky way; just so its easy to reuse code
 measurement_model_radar = kf_dependent_fusion.measurement_model_radar
@@ -128,7 +128,7 @@ ax.add_patch(ellipse)
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion accounting for the dependence")
 fig.show()
-# save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_accounting_for_dependence.pdf", fig)
+save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_accounting_for_dependence.pdf", fig)
 
 # # plot estimate for estimate
 # # plot
