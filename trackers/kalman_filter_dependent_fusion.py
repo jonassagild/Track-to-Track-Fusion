@@ -128,7 +128,7 @@ class kalman_filter_dependent_fusion:
             post_cov, kalman_gain = self.updater_ais._posterior_covariance(hypothesis)
             kf_gains_ais.append(kalman_gain)
             # get the transition model covar
-            predict_over_interval = measurement.timestamp - self.prior_radar.timestamp
+            predict_over_interval = measurement.timestamp - self.prior_ais.timestamp
             transition_covars_radar.append(self.transition_model_radar.covar(time_interval=predict_over_interval))
             transition_matrixes_radar.append(self.transition_model_radar.matrix(time_interval=predict_over_interval))
             # update
