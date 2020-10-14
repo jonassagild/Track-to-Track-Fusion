@@ -19,7 +19,7 @@ from utils.save_figures import save_figure
 
 seed = 1996
 
-generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+generate_scenario_2(seed=seed, permanent_save=False, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
 
 folder = "temp"  # temp instead of seed, as it is not a permanent save
 
@@ -35,6 +35,7 @@ start_time = open_object.open_object(data_folder + "start_time.pk1")
 # prior
 prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
 
+# tracker
 kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
                                                          sigma_process_radar=0.01, sigma_process_ais=0.02,
                                                          sigma_meas_radar=3.5, sigma_meas_ais=1.3)
@@ -127,7 +128,7 @@ ax.add_patch(ellipse)
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion accounting for the dependence")
 fig.show()
-save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_accounting_for_dependence.pdf", fig)
+# save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_accounting_for_dependence.pdf", fig)
 
 # # plot estimate for estimate
 # # plot

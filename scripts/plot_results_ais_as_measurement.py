@@ -19,7 +19,7 @@ from utils.save_figures import save_figure
 
 seed = 1996
 
-generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+generate_scenario_2(seed=seed, permanent_save=False, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
 
 folder = "temp"  # temp instead of seed, as it is not a permanent save
 

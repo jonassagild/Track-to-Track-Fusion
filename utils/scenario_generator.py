@@ -17,12 +17,12 @@ from stonesoup.models.measurement.linear import LinearGaussian
 from utils import store_object
 
 
-def generate_scenario_1(seed=1996, permanent_save=True, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
+def generate_scenario_1(seed=1996, permanent_save=True, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
     """
     Generates scenario 1. Todo define scenario 1
     :param seed:
     :param permanent_save:
-    :param sigma_transition:
+    :param sigma_process:
     :param sigma_meas_radar:
     :param sigma_meas_ais:
     :return:
@@ -33,8 +33,8 @@ def generate_scenario_1(seed=1996, permanent_save=True, sigma_transition=0.01, s
     np.random.seed(seed)
 
     # combine two 1-D CV models to create a 2-D CV model
-    transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_transition),
-                                                              ConstantVelocity(sigma_transition)])
+    transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process),
+                                                              ConstantVelocity(sigma_process)])
 
     # starting at 0,0 and moving NE
     truth = GroundTruthPath([GroundTruthState([0, 1, 0, 1], timestamp=start_time)])
@@ -94,12 +94,12 @@ def generate_scenario_1(seed=1996, permanent_save=True, sigma_transition=0.01, s
     store_object.store_object(transition_model, save_folder, "transition_model.pk1")
 
 
-def generate_scenario_2(seed=1996, permanent_save=True, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
+def generate_scenario_2(seed=1996, permanent_save=True, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
     """
     Generates scenario 2. Scenario 2 consists of radar and ais measurements with the same sampling rate.
     :param seed:
     :param permanent_save:
-    :param sigma_transition:
+    :param sigma_process:
     :param sigma_meas_radar:
     :param sigma_meas_ais:
     :return: Nothing. Saves the scenario to a specified folder
@@ -111,7 +111,7 @@ def generate_scenario_2(seed=1996, permanent_save=True, sigma_transition=0.01, s
 
     # combine two 1-D CV models to create a 2-D CV model
     transition_model = CombinedLinearGaussianTransitionModel(
-        [ConstantVelocity(sigma_transition), ConstantVelocity(sigma_transition)])
+        [ConstantVelocity(sigma_process), ConstantVelocity(sigma_process)])
 
     # starting at 0,0 and moving NE
     truth = GroundTruthPath([GroundTruthState([0, 1, 0, 1], timestamp=start_time)])

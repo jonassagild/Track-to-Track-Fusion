@@ -23,14 +23,14 @@ start_seed = 0
 end_seed = 100
 num_mc_iterations = end_seed - start_seed
 
-sigma_transition = 0.01
+sigma_process = 0.01
 sigma_meas_radar = 3
 sigma_meas_ais = 1
 
 stats_overall = []
 for seed in range(start_seed, end_seed):
     # generate scenario
-    generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=sigma_transition,
+    generate_scenario_2(seed=seed, permanent_save=False, sigma_process=sigma_process,
                         sigma_meas_radar=sigma_meas_radar, sigma_meas_ais=sigma_meas_ais)
 
     folder = "temp"  # temp instead of seed, as it is not a permanent save
@@ -52,17 +52,17 @@ for seed in range(start_seed, end_seed):
 
     # trackers
     kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process=sigma_transition,
+                                                             sigma_process=sigma_process,
                                                              sigma_meas_radar=sigma_meas_radar,
                                                              sigma_meas_ais=sigma_meas_ais)
     kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process_radar=sigma_transition,
-                                                             sigma_process_ais=sigma_transition,
+                                                             sigma_process_radar=sigma_process,
+                                                             sigma_process_ais=sigma_process,
                                                              sigma_meas_radar=sigma_meas_radar,
                                                              sigma_meas_ais=sigma_meas_ais)
     kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process_radar=sigma_transition,
-                                                         sigma_process_ais=sigma_transition,
+                                                         sigma_process_radar=sigma_process,
+                                                         sigma_process_ais=sigma_process,
                                                          sigma_meas_radar=sigma_meas_radar,
                                                          sigma_meas_ais=sigma_meas_ais)
 
