@@ -18,15 +18,20 @@ from trackers.kalman_filter_dependent_fusion import kalman_filter_dependent_fusi
 from utils.save_figures import save_figure
 
 # loop starts here
-# loop over seeds?
-start_seed = 50
-end_seed = 300
+# loop over seeds
+start_seed = 0
+end_seed = 100
 num_mc_iterations = end_seed - start_seed
+
+sigma_transition = 0.01
+sigma_meas_radar = 3
+sigma_meas_ais = 1
 
 stats_overall = []
 for seed in range(start_seed, end_seed):
     # generate scenario
-    generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+    generate_scenario_2(seed=seed, permanent_save=False, sigma_transition=sigma_transition,
+                        sigma_meas_radar=sigma_meas_radar, sigma_meas_ais=sigma_meas_ais)
 
     folder = "temp"  # temp instead of seed, as it is not a permanent save
 
@@ -37,7 +42,7 @@ for seed in range(start_seed, end_seed):
     measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
 
     # remove the first element of ground_truth (because we only fuse the n-1 last with dependent fusion)
-    ground_truth = ground_truth[-(len(ground_truth)-1):]
+    ground_truth = ground_truth[-(len(ground_truth) - 1):]
 
     # load start_time
     start_time = open_object.open_object(data_folder + "start_time.pk1")
@@ -47,14 +52,19 @@ for seed in range(start_seed, end_seed):
 
     # trackers
     kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process=0.01, sigma_meas_radar=3.5,
-                                                             sigma_meas_ais=1.3)
+                                                             sigma_process=sigma_transition,
+                                                             sigma_meas_radar=sigma_meas_radar,
+                                                             sigma_meas_ais=sigma_meas_ais)
     kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                             sigma_process_radar=0.01, sigma_process_ais=0.01,
-                                                             sigma_meas_radar=3.5, sigma_meas_ais=1.3)
+                                                             sigma_process_radar=sigma_transition,
+                                                             sigma_process_ais=sigma_transition,
+                                                             sigma_meas_radar=sigma_meas_radar,
+                                                             sigma_meas_ais=sigma_meas_ais)
     kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process_radar=0.01, sigma_process_ais=0.02,
-                                                         sigma_meas_radar=3.5, sigma_meas_ais=1.3)
+                                                         sigma_process_radar=sigma_transition,
+                                                         sigma_process_ais=sigma_transition,
+                                                         sigma_meas_radar=sigma_meas_radar,
+                                                         sigma_meas_ais=sigma_meas_ais)
 
     tracks_fused_independent, _, _ = kf_independent_fusion.track()
     tracks_fused_dependent, _, _ = kf_dependent_fusion.track()
@@ -123,6 +133,42 @@ ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_ais_as_measurement, ma
                  label='AIS as measurement')
 
 ax_ci_anees.legend()
-fig_ci_anees.show()
+# fig_ci_anees.show()
 
-save_figure("../results/scenario2/1996", "monte_carlo.pdf", fig_ci_anees)
+# save_figure("../results/scenario2/1996", "monte_carlo_all_trackers_same_params.svg", fig_ci_anees)
+
+
+# plot to show how the average ANEES approaches some limit. Plot a changing confidence interval?
+fig_ci_average_anees = plt.figure(figsize=(10, 6))
+ax_ci_average_anees = fig_ci_average_anees.add_subplot(1, 1, 1)
+ax_ci_average_anees.set_xlabel("MC iterations")
+ax_ci_average_anees.set_ylabel("ANEES")
+
+ci_average_anees = [np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks * num_MC_it)) / (num_tracks * num_MC_it)
+                    for num_MC_it in range(1, end_seed - start_seed + 1)]
+ci_average_anees_lower = [ci[0] for ci in ci_average_anees]
+ci_average_anees_upper = [ci[1] for ci in ci_average_anees]
+
+# not the quickest, but works
+average_anees_independent_list = [np.average(anees_independent[:idx]) for idx in range(1, num_mc_iterations + 1)]
+average_anees_dependent_list = [np.average(anees_dependent[:idx]) for idx in range(1, num_mc_iterations + 1)]
+average_anees_ais_as_measurement_list = [np.average(anees_ais_as_measurement[:idx])
+                                         for idx in range(1, num_mc_iterations + 1)]
+
+# plot upper and lower confidence intervals
+ax_ci_average_anees.plot(list(range(start_seed, end_seed)), ci_average_anees_lower, color='black',
+                         label='Confidence Intervals')
+ax_ci_average_anees.plot(list(range(start_seed, end_seed)), ci_average_anees_upper, color='black')
+
+# plot the average ANEES
+ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_independent_list, color='blue',
+                         label='Independent')
+ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_dependent_list, color='red',
+                         label='Dependent')
+ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_ais_as_measurement_list, color='green',
+                         label='AIS as measurement')
+
+ax_ci_average_anees.legend()
+fig_ci_average_anees.show()
+
+# save_figure("../results/scenario2/1996", "monte_carlo_all_trackers_same_params_average_anees.svg", fig_ci_average_anees)
