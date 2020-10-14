@@ -19,8 +19,11 @@ from utils.save_figures import save_figure
 
 # seeds
 start_seed = 0
-end_seed = 500
+end_seed = 500  # normally 500
 num_mc_iterations = end_seed - start_seed
+
+# params
+save_fig = False
 
 # scenario parameters
 sigma_process_list = [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]
@@ -86,6 +89,8 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_independent, ground_truth)
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+        # calculate RMSE
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_independent, ground_truth)
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "independent"
         stats_overall.append(stats_individual)
@@ -95,6 +100,8 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent, ground_truth)
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+        # calculate RMSE
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_dependent, ground_truth)
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "dependent"
         stats_overall.append(stats_individual)
@@ -104,6 +111,8 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_ais_as_measurement, ground_truth)
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+        # calculate RMSE
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_ais_as_measurement, ground_truth)
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "ais as measurement"
         stats_overall.append(stats_individual)
@@ -127,6 +136,11 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     anees_independent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "independent"]
     anees_dependent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "dependent"]
     anees_ais_as_measurement = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "ais as measurement"]
+
+    rmse_independent = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "independent"])
+    rmse_dependent = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "dependent"])
+    rmse_ais_as_measurement = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "ais as " 
+                                                                                                        "measurement"])
 
     # plot the ANEES values
     ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_independent, marker='+', ls='None', color='blue',
@@ -181,15 +195,19 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     ax_ci_average_anees.legend()
     fig_ci_average_anees.show()
 
-    fig_name = "process_" + str(sigma_process) + "_AIS_" + str(sigma_meas_ais) + "_Radar_" \
-               + str(sigma_meas_radar) + ".pdf"
-    save_figure("../results/scenario2/mc_average_anees", fig_name, fig_ci_average_anees)
+    if save_fig:
+        fig_name = "process_" + str(sigma_process) + "_AIS_" + str(sigma_meas_ais) + "_Radar_" \
+                   + str(sigma_meas_radar) + ".pdf"
+        save_figure("../results/scenario2/mc_average_anees", fig_name, fig_ci_average_anees)
 
     # print some results
     print("Process: " + str(sigma_process) + " AIS: " + str(sigma_meas_ais) + " Radar: " + str(sigma_meas_radar))
     print("Average ANEES independent: " + str(average_anees_independent_list[-1]))
     print("Average ANEES dependent: " + str(average_anees_dependent_list[-1]))
     print("Average ANEES AIS as measurement: " + str(average_anees_ais_as_measurement_list[-1]))
+    print("RMSE independent: " + str(rmse_independent))
+    print("RMSE dependent: " + str(rmse_dependent))
+    print("RMSE AIS as measurement: " + str(rmse_ais_as_measurement))
     print("")
 
 print("CI intervals: " + str(ci_average_anees_lower[-1]) + ", " + str(ci_average_anees_upper[-1]))
