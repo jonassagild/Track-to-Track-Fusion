@@ -245,7 +245,7 @@ def generate_scenario_3(seed=1996, permanent_save=True, radar_meas_rate=1, ais_m
                         sigma_meas_radar=3, sigma_meas_ais=1, timesteps=20):
     """
     Generates scenario 3. Scenario 3 consists of radar and ais measurements with different sampling rate. The sampling
-    rate is specified in the input params.
+    rate is specified in the input params. A grountruth is generated for each second.
     :param seed:
     :param permanent_save:
     :param sigma_process:
