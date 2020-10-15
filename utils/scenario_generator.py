@@ -313,7 +313,7 @@ def generate_scenario_3(seed=1996, permanent_save=True, radar_meas_rate=1, ais_m
     else:
         save_folder_name = "temp"
 
-    save_folder = "../scenarios/scenario2/" + save_folder_name + "/"
+    save_folder = "../scenarios/scenario3/" + save_folder_name + "/"
 
     # save the ground truth and the measurements for the radar and the AIS
     store_object.store_object(truth, save_folder, "ground_truth.pk1")
