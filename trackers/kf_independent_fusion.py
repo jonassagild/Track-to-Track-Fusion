@@ -1,0 +1,252 @@
+""" kalman_filter
+
+TODO
+"""
+
+import numpy as np
+
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
+from stonesoup.models.measurement.linear import LinearGaussian
+from stonesoup.models.transition.linear import CombinedLinearGaussianTransitionModel, ConstantVelocity
+from stonesoup.predictor.kalman import KalmanPredictor
+from stonesoup.types.state import GaussianState
+from stonesoup.updater.kalman import KalmanUpdater
+from stonesoup.types.hypothesis import SingleHypothesis
+from stonesoup.types.track import Track
+
+from datetime import timedelta
+
+from utils import open_object
+
+from data_fusion import track_to_track_association
+from data_fusion import track_to_track_fusion
+
+class kalman_filter_independent_fusion:
+    """
+    todo
+    """
+    def __init__(self, start_time, prior: GaussianState,
+                 sigma_process_radar=0.01, sigma_process_ais=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
+        """
+        :param start_time:
+        :param prior:
+        :param sigma_process_radar:
+        :param sigma_process_ais:
+        :param sigma_meas_radar:
+        :param sigma_meas_ais:
+        """
+        self.start_time = start_time
+
+        # transition models (process models)
+        self.transition_model_radar = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process_radar),
+                                                                             ConstantVelocity(sigma_process_radar)])
+        self.transition_model_ais = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process_ais),
+                                                                           ConstantVelocity(sigma_process_ais)])
+
+        # Specify measurement model for radar
+        self.measurement_model_radar = LinearGaussian(
+            ndim_state=4,  # number of state dimensions
+            mapping=(0, 2),  # mapping measurement vector index to state index
+            noise_covar=np.array([[sigma_meas_radar, 0],  # covariance matrix for Gaussian PDF
+                                  [0, sigma_meas_radar]])
+        )
+
+        # Specify measurement model for AIS
+        self.measurement_model_ais = LinearGaussian(
+            ndim_state=4,
+            mapping=(0, 2),
+            noise_covar=np.array([[sigma_meas_ais, 0],
+                                  [0, sigma_meas_ais]])
+        )
+
+        # specify predictors
+        self.predictor_radar = KalmanPredictor(self.transition_model_radar)
+        self.predictor_ais = KalmanPredictor(self.transition_model_ais)
+
+        # specify updaters
+        self.updater_radar = KalmanUpdater(self.measurement_model_radar)
+        self.updater_ais = KalmanUpdater(self.measurement_model_ais)
+
+        # create prior, both trackers use the same starting point
+        self.prior_radar = prior
+        self.prior_ais = prior
+
+    def track(self, start_time, measurements_radar, measurements_ais, fusion_rate=1):
+        """
+        returns fused tracks.
+        """
+
+        time = start_time
+
+        tracks_radar = Track()
+        tracks_ais = Track()
+        tracks_fused = []
+
+        measurements_radar = measurements_radar.copy()
+        measurements_ais = measurements_ais.copy()
+        # loop until there are no more measurements
+        while measurements_radar or measurements_ais:
+            # get all new measurements
+            new_measurements_radar = \
+                [measurement for measurement in measurements_radar if measurement.timestamp < time]
+            new_measurements_ais = \
+                [measurement for measurement in measurements_ais if measurement.timestamp < time]
+
+            # remove the new measurements from the measurements lists
+            for new_meas in new_measurements_ais:
+                measurements_ais.remove(new_meas)
+            for new_meas in new_measurements_radar:
+                measurements_radar.remove(new_meas)
+
+            # for each new_meas, perform an predict and update
+            for measurement in new_measurements_ais:
+                prediction = self.predictor_radar.predict(self.prior_radar, timestamp=measurement.timestamp)
+                hypothesis = SingleHypothesis(prediction, measurement)
+                post = self.updater_radar.update(hypothesis)
+                tracks_radar.append(post)
+                self.prior_radar = tracks_radar[-1]
+            for measurement in new_measurements_radar:
+                prediction = self.predictor_radar.predict(self.prior_ais, timestamp=measurement.timestamp)
+                hypothesis = SingleHypothesis(prediction, measurement)
+                post = self.updater_ais.update(hypothesis)
+                tracks_ais.append(post)
+                self.prior_ais = tracks_ais[-1]
+
+            # perform a prediction up until this time (the newest measurement might no be at this exact time)
+            # note that this "prediction" might be the updated posterior, if the newest measurement was at this time
+            prediction_radar = self.predictor_radar.predict(self.prior_ais, timestamp=time)
+            prediction_ais = self.predictor_ais.predict(self.prior_radar, timestamp=time)
+
+            # fuse these predictions.
+            tracks_fused.append(self._fuse_track(prediction_radar, prediction_ais))
+
+            time += timedelta(seconds=fusion_rate)
+
+        return tracks_fused, tracks_radar, tracks_ais
+
+    def _fuse_track(self, track_radar, track_ais):
+        """
+        fuses the two tracks. Assumes that the tracks have the same timestamp
+        """
+        # todo check the track-to-track association
+
+        fused_posterior, fused_covar = track_to_track_fusion.fuse_independent_tracks(track_radar,
+                                                                                     track_ais)
+        estimate = GaussianState(fused_posterior, fused_covar, timestamp=track_radar.timestamp)
+        return estimate
+
+    def _fuse_tracks(self, tracks_radar, tracks_ais, fusion_rate=1):
+        tracks_fused = []
+        for track_radar in tracks_radar:
+            # find a track in tracks_radar with the same timestamp
+            estimate = track_radar
+            for track_ais in tracks_ais:
+                if track_ais.timestamp == track_radar.timestamp:
+                    # same_target = track_to_track_association.test_association_independent_tracks(track_radar, track_ais,
+                    #                                                                              0.01)
+                    same_target = True  # ignore association for now
+                    if same_target:
+                        fused_posterior, fused_covar = track_to_track_fusion.fuse_independent_tracks(track_radar,
+                                                                                                     track_ais)
+                        estimate = GaussianState(fused_posterior, fused_covar, timestamp=track_radar.timestamp)
+                    break
+            tracks_fused.append(estimate)
+        return tracks_fused
+
+
+# plot
+# fig = plt.figure(figsize=(10, 6))
+# ax = fig.add_subplot(1, 1, 1)
+# ax.set_xlabel("$x$")
+# ax.set_ylabel("$y$")
+# ax.axis('equal')
+# ax.plot([state.state_vector[0] for state in ground_truth],
+#         [state.state_vector[2] for state in ground_truth],
+#         linestyle="--",
+#         label='Ground truth')
+# ax.scatter([state.state_vector[0] for state in measurements_radar],
+#            [state.state_vector[1] for state in measurements_radar],
+#            color='b',
+#            label='Measurements Radar')
+# ax.scatter([state.state_vector[0] for state in measurements_ais],
+#            [state.state_vector[1] for state in measurements_ais],
+#            color='r',
+#            label='Measurements AIS')
+#
+# # add ellipses to the posteriors
+# for state in tracks_radar:
+#     w, v = np.linalg.eig(measurement_model_radar.matrix() @ state.covar @ measurement_model_radar.matrix().T)
+#     max_ind = np.argmax(w)
+#     min_ind = np.argmin(w)
+#     orient = np.arctan2(v[1, max_ind], v[0, max_ind])
+#     ellipse = Ellipse(xy=(state.state_vector[0], state.state_vector[2]),
+#                       width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
+#                       angle=np.rad2deg(orient),
+#                       alpha=0.2,
+#                       color='b')
+#     ax.add_artist(ellipse)
+#
+# for state in tracks_ais:
+#     w, v = np.linalg.eig(measurement_model_ais.matrix() @ state.covar @ measurement_model_ais.matrix().T)
+#     max_ind = np.argmax(w)
+#     min_ind = np.argmin(w)
+#     orient = np.arctan2(v[1, max_ind], v[0, max_ind])
+#     ellipse = Ellipse(xy=(state.state_vector[0], state.state_vector[2]),
+#                       width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
+#                       angle=np.rad2deg(orient),
+#                       alpha=0.2,
+#                       color='r')
+#     ax.add_patch(ellipse)
+#
+# for track_fused in tracks_fused:
+#     w, v = np.linalg.eig(measurement_model_ais.matrix() @ track_fused[1] @ measurement_model_ais.matrix().T)
+#     max_ind = np.argmax(w)
+#     min_ind = np.argmin(w)
+#     orient = np.arctan2(v[1, max_ind], v[0, max_ind])
+#     ellipse = Ellipse(xy=(track_fused[0][0], track_fused[0][2]),
+#                       width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
+#                       angle=np.rad2deg(orient),
+#                       alpha=0.5,
+#                       color='green')
+#     ax.add_patch(ellipse)
+#
+# # add ellipses to add legend todo do this less ugly
+# ellipse = Ellipse(xy=(0, 0),
+#                   width=0,
+#                   height=0,
+#                   color='r',
+#                   alpha=0.2,
+#                   label='Posterior AIS')
+# ax.add_patch(ellipse)
+# ellipse = Ellipse(xy=(0, 0),
+#                   width=0,
+#                   height=0,
+#                   color='b',
+#                   alpha=0.2,
+#                   label='Posterior Radar')
+# ax.add_patch(ellipse)
+# ellipse = Ellipse(xy=(0, 0),
+#                   width=0,
+#                   height=0,
+#                   color='green',
+#                   alpha=0.5,
+#                   label='Posterior Fused')
+# ax.add_patch(ellipse)
+#
+# ax.legend()
+# ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
+# fig.show()
+# fig.savefig("../results/scenario1/KF_tracking_and_fusion_under_error_independence_assumption.svg")
+
+
+
+
+
+
+
+
+
+
+
+
