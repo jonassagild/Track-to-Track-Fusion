@@ -24,7 +24,7 @@ class kalman_filter_independent_fusion:
     """
     todo
     """
-    def __init__(self, measurements_radar, measurements_ais, start_time, prior: GaussianState,
+    def __init__(self, start_time, prior: GaussianState,
                  sigma_process_radar=0.01, sigma_process_ais=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
         """
 
@@ -38,8 +38,6 @@ class kalman_filter_independent_fusion:
         :param sigma_meas_ais:
         """
         self.start_time = start_time
-        self.measurements_radar = measurements_radar
-        self.measurements_ais = measurements_ais
 
         # transition models (process models)
         self.transition_model_radar = CombinedLinearGaussianTransitionModel([ConstantVelocity(sigma_process_radar),
@@ -75,28 +73,31 @@ class kalman_filter_independent_fusion:
         self.prior_radar = prior
         self.prior_ais = prior
 
-    def track(self):
-        self.tracks_radar = Track()
-        for measurement in self.measurements_radar:
+    def track(self, measurements_radar, measurements_ais):
+        """
+        returns fused tracks. Assumes that the rate of the radar and ais measurements are the same, and that they are
+        synchornized.
+        """
+        tracks_radar = Track()
+        for measurement in measurements_radar:
             prediction = self.predictor_radar.predict(self.prior_radar, timestamp=measurement.timestamp)
             hypothesis = SingleHypothesis(prediction, measurement)
             post = self.updater_radar.update(hypothesis)
-            self.tracks_radar.append(post)
-            self.prior_radar = self.tracks_radar[-1]
+            tracks_radar.append(post)
+            self.prior_radar = tracks_radar[-1]
 
-        self.tracks_ais = Track()
-        for measurement in self.measurements_ais:
+        tracks_ais = Track()
+        for measurement in measurements_ais:
             prediction = self.predictor_radar.predict(self.prior_ais, timestamp=measurement.timestamp)
             hypothesis = SingleHypothesis(prediction, measurement)
             post = self.updater_ais.update(hypothesis)
-            self.tracks_ais.append(post)
-            self.prior_ais = self.tracks_ais[-1]
+            tracks_ais.append(post)
+            self.prior_ais = tracks_ais[-1]
 
-        self.tracks_fused = self._fuse_tracks(self.tracks_radar, self.tracks_ais)
+        tracks_fused = self._fuse_tracks(tracks_radar, tracks_ais)
+        return tracks_fused, tracks_radar, tracks_ais
 
-        return self.tracks_fused, self.tracks_radar, self.tracks_ais
-
-    def _fuse_tracks(self, tracks_radar, tracks_ais):
+    def _fuse_tracks(self, tracks_radar, tracks_ais, fusion_rate=1):
         tracks_fused = []
         for track_radar in tracks_radar:
             # find a track in tracks_radar with the same timestamp
