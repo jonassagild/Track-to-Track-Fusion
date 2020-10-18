@@ -61,7 +61,7 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
                                                                  sigma_process=sigma_process,
                                                                  sigma_meas_radar=sigma_meas_radar,
                                                                  sigma_meas_ais=sigma_meas_ais)
-        kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time,
+        kf_independent_fusion = kalman_filter_independent_fusion(start_time,
                                                                  prior,
                                                                  sigma_process_radar=sigma_process,
                                                                  sigma_process_ais=sigma_process,
