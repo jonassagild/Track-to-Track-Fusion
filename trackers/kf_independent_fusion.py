@@ -99,7 +99,7 @@ class kalman_filter_independent_fusion:
             for new_meas in new_measurements_radar:
                 measurements_radar.remove(new_meas)
 
-            # for each new_meas, perform an predict and update
+            # for each new_meas, perform a prediction and an update
             for measurement in new_measurements_ais:
                 prediction = self.predictor_radar.predict(self.prior_radar, timestamp=measurement.timestamp)
                 hypothesis = SingleHypothesis(prediction, measurement)
