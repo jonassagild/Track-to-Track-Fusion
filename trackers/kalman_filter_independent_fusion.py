@@ -73,7 +73,7 @@ class kalman_filter_independent_fusion:
         self.prior_radar = prior
         self.prior_ais = prior
 
-    def track(self, measurements_radar, measurements_ais):
+    def track(self, measurements_radar, measurements_ais, fusion_rate=1):
         """
         returns fused tracks. Assumes that the rate of the radar and ais measurements are the same, and that they are
         synchornized.
@@ -94,7 +94,7 @@ class kalman_filter_independent_fusion:
             tracks_ais.append(post)
             self.prior_ais = tracks_ais[-1]
 
-        tracks_fused = self._fuse_tracks(tracks_radar, tracks_ais)
+        tracks_fused = self._fuse_tracks(tracks_radar, tracks_ais, fusion_rate=fusion_rate)
         return tracks_fused, tracks_radar, tracks_ais
 
     def _fuse_tracks(self, tracks_radar, tracks_ais, fusion_rate=1):
