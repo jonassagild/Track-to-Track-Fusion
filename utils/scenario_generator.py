@@ -94,9 +94,11 @@ def generate_scenario_1(seed=1996, permanent_save=True, sigma_process=0.01, sigm
     store_object.store_object(transition_model, save_folder, "transition_model.pk1")
 
 
-def generate_scenario_2(seed=1996, permanent_save=True, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
+def generate_scenario_2(seed=1996, permanent_save=True, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1,
+                        timesteps=20):
     """
     Generates scenario 2. Scenario 2 consists of radar and ais measurements with the same sampling rate.
+    :param timesteps:
     :param seed:
     :param permanent_save:
     :param sigma_process:
@@ -117,7 +119,7 @@ def generate_scenario_2(seed=1996, permanent_save=True, sigma_process=0.01, sigm
     truth = GroundTruthPath([GroundTruthState([0, 1, 0, 1], timestamp=start_time)])
 
     # generate truth using transition_model and noise
-    for k in range(1, 21):
+    for k in range(1, timesteps+1):
         truth.append(GroundTruthState(
             transition_model.function(truth[k - 1], noise=True, time_interval=timedelta(seconds=1)),
             timestamp=start_time + timedelta(seconds=k)))
