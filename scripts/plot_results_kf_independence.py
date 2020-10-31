@@ -12,16 +12,23 @@ from matplotlib.patches import Ellipse
 from trackers.kalman_filter_independent_fusion import kalman_filter_independent_fusion
 
 from utils.scenario_generator import generate_scenario_2
-from utils import open_object
+from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
 # run dependent fusion and plot
+sigma_process = 0.5
+sigma_meas_radar = 20
+sigma_meas_ais = 10
+
 
 seed = 1996
-
-generate_scenario_2(seed=seed, permanent_save=False, sigma_process=0.01, sigma_meas_radar=3, sigma_meas_ais=1)
+num_steps = 30
+generate_scenario_2(seed=seed, permanent_save=False, sigma_process=sigma_process, sigma_meas_radar=sigma_meas_radar,
+                    sigma_meas_ais=sigma_meas_ais, timesteps=num_steps)
 
 folder = "temp"  # temp instead of seed, as it is not a permanent save
+
+save_fig = True
 
 # load ground truth and the measurements
 data_folder = "../scenarios/scenario2/" + folder + "/"
@@ -33,19 +40,42 @@ measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
 start_time = open_object.open_object(data_folder + "start_time.pk1")
 
 # prior
-prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
+prior = GaussianState([1, 1.1, -1, 0.9], np.diag([1, 0.1, 1, 0.1]) ** 2, timestamp=start_time)
 
-kf_independent_fusion = kalman_filter_independent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process_radar=0.01, sigma_process_ais=0.01,
-                                                         sigma_meas_radar=3, sigma_meas_ais=1)
+kf_independent_fusion = kalman_filter_independent_fusion(start_time, prior,
+                                                         sigma_process_radar=sigma_process,
+                                                         sigma_process_ais=sigma_process,
+                                                         sigma_meas_radar=sigma_meas_radar,
+                                                         sigma_meas_ais=sigma_meas_ais)
 
 # hacky way; just so its easy to reuse code
 measurement_model_radar = kf_independent_fusion.measurement_model_radar
 measurement_model_ais = measurement_model_radar
 
-tracks_fused, tracks_ais, tracks_radar = kf_independent_fusion.track()
+tracks_fused, tracks_ais, tracks_radar = kf_independent_fusion.track(measurements_radar, measurements_ais,
+                                                                     fusion_rate=1)
 
-# plot
+# calculate CI
+alpha = 0.9
+ci_nees = scipy.stats.chi2.interval(alpha, 4)
+ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_steps)) / num_steps
+
+# calculate some metrics
+# calculate NEES
+nees = calc_metrics.calc_nees(tracks_fused, ground_truth)
+# calculate ANEES
+anees = calc_metrics.calc_anees(nees)
+# calculate RMSE
+rmse = calc_metrics.calc_rmse(tracks_fused, ground_truth)
+# calculate percentage NEES within CI
+percentage_nees_within_CI = calc_metrics.calc_percentage_nees_within_ci(nees, ci_nees)
+
+metrics_info = "Percentage NEES within CI: " + str(percentage_nees_within_CI) + "\n" + "RMSE: " + str(rmse) + "\n" + \
+               "ANEES: " + str(anees) + "\n" + "Alpha: " + str(alpha) + "\n" + "CI NEES: " + str(ci_nees) + "\n" + \
+               "CI ANEES: " + str(ci_anees)
+print(metrics_info)
+
+# plot the trackers estimate a long with the fused estimate
 fig = plt.figure(figsize=(10, 6))
 ax = fig.add_subplot(1, 1, 1)
 ax.set_xlabel("$x$")
@@ -58,10 +88,12 @@ ax.plot([state.state_vector[0] for state in ground_truth],
 ax.scatter([state.state_vector[0] for state in measurements_radar],
            [state.state_vector[1] for state in measurements_radar],
            color='b',
+           s=8,
            label='Measurements Radar')
 ax.scatter([state.state_vector[0] for state in measurements_ais],
            [state.state_vector[1] for state in measurements_ais],
            color='r',
+           s=8,
            label='Measurements AIS')
 
 # add ellipses to the posteriors
@@ -97,7 +129,7 @@ for track_fused in tracks_fused:
     ellipse = Ellipse(xy=(track_fused.state_vector[0], track_fused.state_vector[2]),
                       width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
                       angle=np.rad2deg(orient),
-                      alpha=0.5,
+                      alpha=0.9,
                       color='green')
     ax.add_patch(ellipse)
 
@@ -120,14 +152,20 @@ ellipse = Ellipse(xy=(0, 0),
                   width=0,
                   height=0,
                   color='green',
-                  alpha=0.5,
+                  alpha=0.9,
                   label='Posterior Fused')
 ax.add_patch(ellipse)
 
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
 fig.show()
-save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_under_error_independence_assumption.pdf", fig)
+if save_fig:
+    folder = "../results/scenario1/1996"
+    name = "KF_fusion_independent_tracks"
+    save_figure(folder, name + ".pdf", fig)
+    metrics_file = open(folder + "/" + name + ".txt", 'w')
+    metrics_file.write(metrics_info)
+    metrics_file.close()
 
 # # plot estimate for estimate
 # # plot
