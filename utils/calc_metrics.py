@@ -50,3 +50,11 @@ def calc_rmse(tracks: Track, ground_truths: GroundTruthPath):
     mean_squared_error = squared_errors.T @ squared_errors
     rmse = np.sqrt(mean_squared_error)
     return rmse.flatten()[0]
+
+
+def calc_percentage_nees_within_ci(nees, ci):
+    """
+    Calculates the percentage of NEES within the confidence interval
+    """
+    within_ci = [ind_nees < ci[1] and ind_nees > ci[0] for ind_nees in nees]
+    return sum(within_ci) / len(nees)
