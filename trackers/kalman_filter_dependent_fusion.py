@@ -148,7 +148,7 @@ class kalman_filter_dependent_fusion:
         # use indexes to loop through tracks, kf_gains etc
 
         tracks_fused = []
-        # tracks_fused.append(tracks_radar[0])
+        tracks_fused.append(tracks_radar[0])
         for i in range(1, len(tracks_radar)):
             # we assume that the indexes correlates with the timestamps. I.e. that the lists are 'synchronized'
             # check to make sure
