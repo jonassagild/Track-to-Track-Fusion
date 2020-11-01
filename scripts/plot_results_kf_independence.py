@@ -157,7 +157,7 @@ ellipse = Ellipse(xy=(0, 0),
 ax.add_patch(ellipse)
 
 ax.legend()
-ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
+ax.set_title("Kalman filter tracking and fusion of independent tracks")
 fig.show()
 if save_fig:
     folder = "../results/scenario1/1996"
