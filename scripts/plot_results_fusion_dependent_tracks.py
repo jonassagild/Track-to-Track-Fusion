@@ -42,17 +42,17 @@ start_time = open_object.open_object(data_folder + "start_time.pk1")
 # prior
 prior = GaussianState([1, 1.1, -1, 0.9], np.diag([1, 0.1, 1, 0.1]) ** 2, timestamp=start_time)
 
-kf_independent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
-                                                         sigma_process_radar=sigma_process,
-                                                         sigma_process_ais=sigma_process,
-                                                         sigma_meas_radar=sigma_meas_radar,
-                                                         sigma_meas_ais=sigma_meas_ais)
+kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
+                                                     sigma_process_radar=sigma_process,
+                                                     sigma_process_ais=sigma_process,
+                                                     sigma_meas_radar=sigma_meas_radar,
+                                                     sigma_meas_ais=sigma_meas_ais)
 
 # hacky way; just so its easy to reuse code
-measurement_model_radar = kf_independent_fusion.measurement_model_radar
+measurement_model_radar = kf_dependent_fusion.measurement_model_radar
 measurement_model_ais = measurement_model_radar
 
-tracks_fused, tracks_ais, tracks_radar = kf_independent_fusion.track()
+tracks_fused, tracks_ais, tracks_radar = kf_dependent_fusion.track()
 
 # calculate CI
 alpha = 0.9
@@ -156,7 +156,7 @@ ellipse = Ellipse(xy=(0, 0),
 ax.add_patch(ellipse)
 
 ax.legend()
-ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
+ax.set_title("Kalman filter tracking and fusion of dependent tracks")
 fig.show()
 if save_fig:
     folder = "../results/scenario1/1996"
