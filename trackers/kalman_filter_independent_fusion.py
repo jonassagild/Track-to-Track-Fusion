@@ -95,7 +95,7 @@ class kalman_filter_independent_fusion:
             self.prior_ais = tracks_ais[-1]
 
         tracks_fused = self._fuse_tracks(tracks_radar, tracks_ais, fusion_rate=fusion_rate)
-        return tracks_fused, tracks_radar, tracks_ais
+        return tracks_fused, tracks_ais, tracks_radar
 
     def _fuse_tracks(self, tracks_radar, tracks_ais, fusion_rate=1):
         tracks_fused = []
