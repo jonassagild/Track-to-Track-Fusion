@@ -3,7 +3,7 @@
 """
 
 
-def populate_latex_table(info_dict):
+def populate_latex_table(info_dict, fusion_type):
     """
     Populates a latex table similar to that of the results after performing Monte-Carlo sims on the fusion algorithms.
     """
@@ -18,6 +18,7 @@ def populate_latex_table(info_dict):
     for process_noise in process_noises:
         latex_table += "$\sigma_{process}=" + str(process_noise) + "$"
         for radar_noise in radar_noises:
-            latex_table += "& " + str(info_dict[(process_noise, radar_noise)])
+            latex_table += "& " + str(round(info_dict[(process_noise, radar_noise, fusion_type)], 2))
         latex_table += "\\\\ \hline" + "\n"
 
+    return latex_table
