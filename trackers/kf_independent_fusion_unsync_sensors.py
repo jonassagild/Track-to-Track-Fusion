@@ -1,6 +1,6 @@
 """ kalman_filter
 
-TODO
+Fusion of idenpendent tracks with unsynchronized sensors
 """
 
 import numpy as np
@@ -89,9 +89,9 @@ class kalman_filter_independent_fusion:
         while measurements_radar or measurements_ais:
             # get all new measurements
             new_measurements_radar = \
-                [measurement for measurement in measurements_radar if measurement.timestamp < time]
+                [measurement for measurement in measurements_radar if measurement.timestamp <= time]
             new_measurements_ais = \
-                [measurement for measurement in measurements_ais if measurement.timestamp < time]
+                [measurement for measurement in measurements_ais if measurement.timestamp <= time]
 
             # remove the new measurements from the measurements lists
             for new_meas in new_measurements_ais:
@@ -113,7 +113,7 @@ class kalman_filter_independent_fusion:
                 tracks_ais.append(post)
                 self.prior_ais = tracks_ais[-1]
 
-            # perform a prediction up until this time (the newest measurement might no be at this exact time)
+            # perform a prediction up until this time (the newest measurement might not be at this exact time)
             # note that this "prediction" might be the updated posterior, if the newest measurement was at this time
             prediction_radar = self.predictor_radar.predict(self.prior_ais, timestamp=time)
             prediction_ais = self.predictor_ais.predict(self.prior_radar, timestamp=time)

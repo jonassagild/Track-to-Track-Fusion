@@ -1,6 +1,6 @@
 """plot_stuff script to plot things
 
-Just temporary code to plot things. Not for producing results, but for testing code.
+Just temporary code to plot things. Plots fusion of independent tracks with unsychronised sensors
 """
 import numpy as np
 import scipy
@@ -12,18 +12,22 @@ from matplotlib.patches import Ellipse
 from trackers.kf_independent_fusion import kalman_filter_independent_fusion
 
 from utils.scenario_generator import generate_scenario_3
-from utils import open_object
+from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
 # run dependent fusion and plot
 
+save_fig = False
+
 seed = 1996
 radar_meas_rate = 1
 ais_meas_rate = 5
-timesteps = 10
+timesteps = 10  # num of measurements from the slowest sensor
 sigma_process = 0.05
 sigma_meas_radar = 5
 sigma_meas_ais = 10
+
+num_steps = timesteps + max(ais_meas_rate, radar_meas_rate)
 
 generate_scenario_3(seed=seed, permanent_save=False, radar_meas_rate=radar_meas_rate,
                     ais_meas_rate=ais_meas_rate, sigma_process=sigma_process,
@@ -57,6 +61,27 @@ tracks_fused, tracks_ais, tracks_radar = kf_independent_fusion.track(start_time,
                                                                      measurements_radar,
                                                                      measurements_ais,
                                                                      fusion_rate=1)
+# calculate CI
+alpha = 0.9
+ci_nees = scipy.stats.chi2.interval(alpha, 4)
+ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_steps)) / num_steps
+
+# calculate some metrics
+# calculate NEES
+nees = calc_metrics.calc_nees(tracks_fused, ground_truth)
+# calculate ANEES
+anees = calc_metrics.calc_anees(nees)
+# calculate RMSE
+rmse = calc_metrics.calc_rmse(tracks_fused, ground_truth)
+# calculate percentage NEES within CI
+percentage_nees_within_CI = calc_metrics.calc_percentage_nees_within_ci(nees, ci_nees)
+
+metrics_info = "Percentage NEES within CI: " + str(percentage_nees_within_CI) + "\n" + "RMSE: " + str(rmse) + "\n" + \
+               "ANEES: " + str(anees) + "\n" + "Alpha: " + str(alpha) + "\n" + "CI NEES: " + str(ci_nees) + "\n" + \
+               "CI ANEES: " + str(ci_anees)
+print(metrics_info)
+
+
 
 # plot
 fig = plt.figure(figsize=(10, 6))
@@ -140,7 +165,10 @@ ax.add_patch(ellipse)
 ax.legend()
 ax.set_title("Kalman filter tracking and fusion under the error independence assumption")
 fig.show()
-save_figure("../results/scenario3/1996", "KF_tracking_and_fusion_under_error_independence_assumption_diff_samp_rate.pdf", fig)
+if save_fig:
+    folder = "../results/scenario3/1996"
+    name = "KF_tracking_and_fusion_under_error_independence_assumption_diff_samp_rate"
+    save_figure(folder, name + ".pdf", fig)
 
 # # plot estimate for estimate
 # # plot
