@@ -12,7 +12,7 @@ from utils import calc_metrics
 
 from utils.scenario_generator import generate_scenario_3
 from trackers.kalman_filter_view_AIS_as_measurement import kalman_filter_ais_as_measurement
-from trackers.kf_independent_fusion import kalman_filter_independent_fusion
+from trackers.kf_independent_fusion_unsync_sensors import kalman_filter_independent_fusion
 from trackers.kalman_filter_dependent_fusion import kalman_filter_dependent_fusion
 
 from utils.save_figures import save_figure
