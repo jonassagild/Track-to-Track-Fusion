@@ -19,7 +19,7 @@ from utils.save_figures import save_figure
 
 # seeds
 start_seed = 0
-end_seed = 500  # normally 500
+end_seed = 150  # normally 500
 num_mc_iterations = end_seed - start_seed
 
 # params
@@ -51,9 +51,6 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         measurements_radar = open_object.open_object(data_folder + "measurements_radar.pk1")
         measurements_ais = open_object.open_object(data_folder + "measurements_ais.pk1")
 
-        # remove the first element of ground_truth (because we only fuse the n-1 last with dependent fusion)
-        ground_truth = ground_truth[-(len(ground_truth) - 1):]
-
         # load start_time
         start_time = open_object.open_object(data_folder + "start_time.pk1")
 
@@ -84,10 +81,12 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         # tracks_fused_ais_as_measurement, _ = kf_ais_as_measurement.track()
         #
         # # fix the length of the fusions to dependent (as it is a bit shorter)
-        # num_tracks = len(tracks_fused_dependent)
+        num_tracks = len(tracks_fused_independent)
         # # get the num_tracks last elements
         # tracks_fused_independent = tracks_fused_independent[-num_tracks:]
         # tracks_fused_ais_as_measurement = tracks_fused_ais_as_measurement[-num_tracks:]
+        # remove the first element of ground_truth (because we only fuse the n-1 last with dependent fusion)
+        ground_truth = ground_truth[-num_tracks:]
 
         # Calculate some metrics
         stats_individual = {}
