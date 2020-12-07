@@ -15,8 +15,6 @@ from utils.scenario_generator import generate_scenario_3
 from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
-# run dependent fusion and plot
-
 save_fig = False
 
 seed = 1996
@@ -27,7 +25,7 @@ sigma_process = 0.05
 sigma_meas_radar = 5
 sigma_meas_ais = 10
 
-num_steps = timesteps + max(ais_meas_rate, radar_meas_rate)
+num_estimates = timesteps + max(ais_meas_rate, radar_meas_rate)
 
 generate_scenario_3(seed=seed, permanent_save=False, radar_meas_rate=radar_meas_rate,
                     ais_meas_rate=ais_meas_rate, sigma_process=sigma_process,
@@ -64,7 +62,7 @@ tracks_fused, tracks_ais, tracks_radar = kf_independent_fusion.track(start_time,
 # calculate CI
 alpha = 0.9
 ci_nees = scipy.stats.chi2.interval(alpha, 4)
-ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_steps)) / num_steps
+ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_estimates)) / num_estimates
 
 # calculate some metrics
 # calculate NEES
