@@ -110,7 +110,7 @@ class kalman_filter_dependent_fusion:
                                                                                        measurement_model=self.measurement_model_radar)
             post_cov, kalman_gain = self.updater_radar._posterior_covariance(hypothesis)
             kf_gains_radar.append(kalman_gain)
-            # get the transition model covar
+            # get the transition model covar NOTE; same for AIS and radar. Name change not a bug
             predict_over_interval = measurement.timestamp - self.prior_radar.timestamp
             transition_covars_ais.append(self.transition_model_ais.covar(time_interval=predict_over_interval))
             transition_matrixes_ais.append(self.transition_model_ais.matrix(time_interval=predict_over_interval))
