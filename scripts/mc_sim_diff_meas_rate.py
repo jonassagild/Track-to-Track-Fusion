@@ -11,27 +11,27 @@ from utils import open_object
 from utils import calc_metrics
 
 from utils.scenario_generator import generate_scenario_3
-from trackers.kf_kf_fusion_unsync_sensors import KFFusionUnsyncSensors
-from trackers.kf_independent_fusion_unsync_sensors import kalman_filter_independent_fusion
-from trackers.kalman_filter_dependent_fusion import kalman_filter_dependent_fusion
+from trackers.kf_kf_fusion_async_sensors import KFFusionUnsyncSensors
+from trackers.kf_independent_fusion_async_sensors import kalman_filter_independent_fusion
+from trackers.kf_dependent_fusion_async_sensors import kalman_filter_dependent_fusion
 
 from utils.save_figures import save_figure
 
 # seeds
 start_seed = 0
-end_seed = 5  # normally 500
+end_seed = 10  # normally 500
 num_mc_iterations = end_seed - start_seed
 
 # params
 save_fig = False
 
 # scenario parameters
-sigma_process_list = [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]
-sigma_meas_radar_list = [1, 5, 100, 1, 5, 100, 1, 5, 100]
-sigma_meas_ais_list = [10, 10, 10, 10, 10, 10, 10, 10, 10]
+sigma_process_list = [0.05, 0.5, 3]  # [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]
+sigma_meas_radar_list = [1, 1, 1]  # [5, 5, 5]  # [1, 5, 100, 1, 5, 100, 1, 5, 100]
+sigma_meas_ais_list = sigma_meas_radar_list  # [10, 10, 10]  # [10, 10, 10, 10, 10, 10, 10, 10, 10]
 radar_meas_rate = 1
-ais_meas_rate = 5
-timesteps = 10
+ais_meas_rate = 1
+timesteps = 50
 
 for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, sigma_meas_radar_list,
                                                            sigma_meas_ais_list):
@@ -55,7 +55,7 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         start_time = open_object.open_object(data_folder + "start_time.pk1")
 
         # prior
-        prior = GaussianState([0, 1, 0, 1], np.diag([1.5, 0.5, 1.5, 0.5]) ** 2, timestamp=start_time)
+        prior = GaussianState([1, 1.1, -1, 0.9], np.diag([1, 0.1, 1, 0.1]) ** 2, timestamp=start_time)
 
         # trackers
         kf_kf_fusion = KFFusionUnsyncSensors(start_time,
@@ -69,22 +69,24 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
                                                                  sigma_process_ais=sigma_process,
                                                                  sigma_meas_radar=sigma_meas_radar,
                                                                  sigma_meas_ais=sigma_meas_ais)
-        # kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measurements_ais, start_time, prior,
-        #                                                      sigma_process_radar=sigma_process,
-        #                                                      sigma_process_ais=sigma_process,
-        #                                                      sigma_meas_radar=sigma_meas_radar,
-        #                                                      sigma_meas_ais=sigma_meas_ais)
+        kf_dependent_fusion = kalman_filter_dependent_fusion(start_time, prior,
+                                                             sigma_process_radar=sigma_process,
+                                                             sigma_process_ais=sigma_process,
+                                                             sigma_meas_radar=sigma_meas_radar,
+                                                             sigma_meas_ais=sigma_meas_ais)
 
         tracks_fused_independent, _, _ = kf_independent_fusion.track(start_time, measurements_radar, measurements_ais,
                                                                      fusion_rate=1)
-        # tracks_fused_dependent, _, _ = kf_dependent_fusion.track()
+        tracks_fused_dependent, _, _ = kf_dependent_fusion.track_async(start_time, measurements_radar, measurements_ais,
+                                                                 fusion_rate=1)
         tracks_kf_fusion, _ = kf_kf_fusion.track(measurements_radar, measurements_ais, estimation_rate=1)
         #
-        # # fix the length of the fusions to dependent (as it is a bit shorter)
-        num_tracks = len(tracks_fused_independent)
+        # remove the first element
+        num_tracks = len(tracks_fused_independent) - 1
         # # get the num_tracks last elements
-        # tracks_fused_independent = tracks_fused_independent[-num_tracks:]
+        tracks_fused_independent = tracks_fused_independent[-num_tracks:]
         tracks_kf_fusion = tracks_kf_fusion[-num_tracks:]
+        tracks_fused_dependent = tracks_fused_dependent[-num_tracks:]
         # remove the first element of ground_truth (because we only fuse the n-1 last with dependent fusion)
         ground_truth = ground_truth[-num_tracks:]
 
@@ -99,18 +101,18 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "independent"
         stats_overall.append(stats_individual)
-        #
-        # stats_individual = {}
-        # # calculate NEES
-        # stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent, ground_truth)
-        # # calculate ANEES
-        # stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
-        # # calculate RMSE
-        # stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_dependent, ground_truth)
-        # stats_individual["seed"] = seed
-        # stats_individual["fusion_type"] = "dependent"
-        # stats_overall.append(stats_individual)
-        #
+
+        stats_individual = {}
+        # calculate NEES
+        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent, ground_truth)
+        # calculate ANEES
+        stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
+        # calculate RMSE
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_dependent, ground_truth)
+        stats_individual["seed"] = seed
+        stats_individual["fusion_type"] = "dependent"
+        stats_overall.append(stats_individual)
+
         stats_individual = {}
         # calculate NEES
         stats_individual["NEES"] = calc_metrics.calc_nees(tracks_kf_fusion, ground_truth)
@@ -138,19 +140,19 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     ax_ci_anees.plot([start_seed, end_seed], [ci_anees[1], ci_anees[1]], color='red')
 
     anees_independent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "independent"]
-    # anees_dependent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "dependent"]
+    anees_dependent = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "dependent"]
     anees_ais_as_measurement = [stat['ANEES'] for stat in stats_overall if stat["fusion_type"] == "ais as measurement"]
 
     rmse_independent = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "independent"])
-    # rmse_dependent = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "dependent"])
+    rmse_dependent = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "dependent"])
     rmse_ais_as_measurement = np.mean([stat['RMSE'] for stat in stats_overall if stat["fusion_type"] == "ais as "
                                                                                                         "measurement"])
 
     # plot the ANEES values
     ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_independent, marker='+', ls='None', color='blue',
                      label='Independent')
-    # ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_dependent, marker='+', ls='None', color='red',
-    #                  label='Dependent')
+    ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_dependent, marker='+', ls='None', color='red',
+                     label='Dependent')
     ax_ci_anees.plot(list(range(start_seed, end_seed)), anees_ais_as_measurement, marker='+', ls='None', color='green',
                      label='AIS as measurement')
 
@@ -165,7 +167,7 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     ax_ci_average_anees.set_xlabel("MC iterations")
     ax_ci_average_anees.set_ylabel("ANEES")
     # set y-axis limits
-    ax_ci_average_anees.set_ylim(2.5, 27)
+    ax_ci_average_anees.set_ylim(2.5, 7)
 
     ci_average_anees = [
         np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks * num_MC_it)) / (num_tracks * num_MC_it)
@@ -175,7 +177,7 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
 
     # not the quickest, but works
     average_anees_independent_list = [np.average(anees_independent[:idx]) for idx in range(1, num_mc_iterations + 1)]
-    # average_anees_dependent_list = [np.average(anees_dependent[:idx]) for idx in range(1, num_mc_iterations + 1)]
+    average_anees_dependent_list = [np.average(anees_dependent[:idx]) for idx in range(1, num_mc_iterations + 1)]
     average_anees_ais_as_measurement_list = [np.average(anees_ais_as_measurement[:idx])
                                              for idx in range(1, num_mc_iterations + 1)]
 
@@ -187,8 +189,8 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     # plot the average ANEES
     ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_independent_list, color='blue',
                              label='Independent')
-    # ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_dependent_list, color='red',
-    #                          label='Dependent')
+    ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_dependent_list, color='red',
+                             label='Dependent')
     ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_ais_as_measurement_list, color='green',
                              label='AIS as measurement')
 
@@ -208,10 +210,10 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     # print some results
     print("Process: " + str(sigma_process) + " AIS: " + str(sigma_meas_ais) + " Radar: " + str(sigma_meas_radar))
     print("Average ANEES independent: " + str(average_anees_independent_list[-1]))
-    # print("Average ANEES dependent: " + str(average_anees_dependent_list[-1]))
+    print("Average ANEES dependent: " + str(average_anees_dependent_list[-1]))
     print("Average ANEES AIS as measurement: " + str(average_anees_ais_as_measurement_list[-1]))
     print("RMSE independent: " + str(rmse_independent))
-    # print("RMSE dependent: " + str(rmse_dependent))
+    print("RMSE dependent: " + str(rmse_dependent))
     print("RMSE AIS as measurement: " + str(rmse_ais_as_measurement))
     print("")
 
