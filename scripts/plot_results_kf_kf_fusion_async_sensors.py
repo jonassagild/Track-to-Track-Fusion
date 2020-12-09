@@ -15,16 +15,15 @@ from utils.scenario_generator import generate_scenario_3
 from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
-# run dependent fusion and plot
+save_fig = False
+
+seed = 1996
+radar_meas_rate = 1
+ais_meas_rate = 5
+timesteps = 10  # num of measurements from the slowest sensor
 sigma_process = 0.5
 sigma_meas_radar = 5
 sigma_meas_ais = 10
-radar_meas_rate = 1
-ais_meas_rate = 5
-
-
-seed = 1996
-timesteps = 10  # number of measurements from the slowest sensor
 
 num_estimates = timesteps * max(radar_meas_rate, ais_meas_rate)
 
@@ -33,8 +32,6 @@ generate_scenario_3(seed=seed, permanent_save=False, radar_meas_rate=radar_meas_
                     timesteps=timesteps)
 
 folder = "temp"  # temp instead of seed, as it is not a permanent save
-
-save_fig = True
 
 # load ground truth and the measurements
 data_folder = "../scenarios/scenario3/" + folder + "/"
