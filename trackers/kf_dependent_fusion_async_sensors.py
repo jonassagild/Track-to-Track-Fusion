@@ -288,7 +288,6 @@ class kalman_filter_dependent_fusion:
                 tracks_radar.append(prediction_radar)
                 self.prior_radar = prediction_radar
 
-            # I think we have all the information needed to calculate the cross-covariance?
             # calculate the cross-covariance
             cross_cov_ij = calc_cross_cov_estimate_error(
                 self.measurement_model_radar.matrix(), self.measurement_model_ais.matrix(), kf_gain_radar,
@@ -296,7 +295,7 @@ class kalman_filter_dependent_fusion:
             )
             cross_cov_ji = calc_cross_cov_estimate_error(
                 self.measurement_model_ais.matrix(), self.measurement_model_radar.matrix(), kf_gain_ais,
-                kf_gain_radar, transition_matrix_ais, transition_covar_radar, cross_cov_ji
+                kf_gain_radar, transition_matrix_ais, transition_covar_ais, cross_cov_ji
             )
 
             same_target = True  # ignore test for track association for now

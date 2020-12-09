@@ -33,6 +33,7 @@ def calc_partial_feedback_cross_cov(track1, track2, cross_covar_ij, cross_covar_
     P_j = track2.covar
     P_ij = cross_covar_ij
     P_ji = cross_covar_ji
-    K_12 = (P_i + P_ij) @ np.linalg.inv(P_i + P_j - P_ij - P_ji)
+    K_12 = (P_i - P_ij) @ np.linalg.inv(P_i + P_j - P_ij - P_ji)
+    K_12 = np.linalg.solve((P_i + P_j - P_ij - P_ji).T, (P_i - P_ij).T).T
     cross_covar = (np.eye(4) - K_12) @ cross_covar_ij + K_12 @ P_j
     return cross_covar
