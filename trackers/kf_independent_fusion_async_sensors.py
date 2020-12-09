@@ -101,22 +101,22 @@ class kalman_filter_independent_fusion:
 
             # for each new_meas, perform a prediction and an update
             for measurement in new_measurements_ais:
+                prediction = self.predictor_ais.predict(self.prior_ais, timestamp=measurement.timestamp)
+                hypothesis = SingleHypothesis(prediction, measurement)
+                post = self.updater_ais.update(hypothesis)
+                tracks_ais.append(post)
+                self.prior_ais = tracks_ais[-1]
+            for measurement in new_measurements_radar:
                 prediction = self.predictor_radar.predict(self.prior_radar, timestamp=measurement.timestamp)
                 hypothesis = SingleHypothesis(prediction, measurement)
                 post = self.updater_radar.update(hypothesis)
                 tracks_radar.append(post)
                 self.prior_radar = tracks_radar[-1]
-            for measurement in new_measurements_radar:
-                prediction = self.predictor_radar.predict(self.prior_ais, timestamp=measurement.timestamp)
-                hypothesis = SingleHypothesis(prediction, measurement)
-                post = self.updater_ais.update(hypothesis)
-                tracks_ais.append(post)
-                self.prior_ais = tracks_ais[-1]
 
             # perform a prediction up until this time (the newest measurement might not be at this exact time)
             # note that this "prediction" might be the updated posterior, if the newest measurement was at this time
-            prediction_radar = self.predictor_radar.predict(self.prior_ais, timestamp=time)
-            prediction_ais = self.predictor_ais.predict(self.prior_radar, timestamp=time)
+            prediction_radar = self.predictor_radar.predict(self.prior_radar, timestamp=time)
+            prediction_ais = self.predictor_ais.predict(self.prior_ais, timestamp=time)
 
             # fuse these predictions.
             tracks_fused.append(self._fuse_track(prediction_radar, prediction_ais))
