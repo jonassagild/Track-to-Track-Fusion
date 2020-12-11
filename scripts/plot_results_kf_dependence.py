@@ -19,12 +19,15 @@ from utils.save_figures import save_figure
 
 seed = 1996
 
-sigma_process = 3
-sigma_meas_radar = 100
-sigma_meas_radar = 10
+sigma_process = 1
+sigma_meas_radar = 5
+sigma_meas_ais = 10
+num_steps = 15
+
+save_fig = True
 
 generate_scenario_2(seed=seed, permanent_save=False, sigma_process=sigma_process, sigma_meas_radar=sigma_meas_radar,
-                    sigma_meas_ais=sigma_meas_radar)
+                    sigma_meas_ais=sigma_meas_ais, timesteps=num_steps)
 
 folder = "temp"  # temp instead of seed, as it is not a permanent save
 
@@ -45,7 +48,7 @@ kf_dependent_fusion = kalman_filter_dependent_fusion(measurements_radar, measure
                                                      sigma_process_radar=sigma_process,
                                                      sigma_process_ais=sigma_process,
                                                      sigma_meas_radar=sigma_meas_radar,
-                                                     sigma_meas_ais=sigma_meas_radar)
+                                                     sigma_meas_ais=sigma_meas_ais)
 
 # hacky way; just so its easy to reuse code
 measurement_model_radar = kf_dependent_fusion.measurement_model_radar
@@ -132,10 +135,14 @@ ellipse = Ellipse(xy=(0, 0),
                   label='Posterior Fused')
 ax.add_patch(ellipse)
 
-ax.legend()
-ax.set_title("Kalman filter tracking and fusion accounting for the dependence")
+ax.legend(prop={'size': 12})
+title = "Scenario 1 with $\sigma_{AIS} = " + str(sigma_meas_ais) + "$, $\sigma_{radar} = " + str(sigma_meas_radar) + \
+        "$ and  $\sigma_{process} = " + str(sigma_process) + \
+        "$. \n Fusion is performed accounting for the common process noise."
+ax.set_title(title, fontsize=20)
 fig.show()
-# save_figure("../results/scenario2/1996", "KF_tracking_and_fusion_accounting_for_dependence.pdf", fig)
+if save_fig:
+    save_figure("../results/final_results/scenario_examples", "scenario1_example.pdf", fig)
 
 # # plot estimate for estimate
 # # plot
