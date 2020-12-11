@@ -273,7 +273,6 @@ class kalman_filter_dependent_fusion:
                 # calc posterior
                 post = self.updater_radar.update(hypothesis)
                 # append posterior and update prior_radar
-                tracks_radar.append(post)
                 self.prior_radar = post
             else:
                 # calc transition matrix and set kalman gain to 0
@@ -285,7 +284,6 @@ class kalman_filter_dependent_fusion:
                 # set kalman gain to 0
                 kf_gain_radar = Matrix([[0, 0], [0, 0], [0, 0], [0, 0]])
                 # append prediction and update prior_radar
-                tracks_radar.append(prediction_radar)
                 self.prior_radar = prediction_radar
 
             # calculate the cross-covariance
@@ -313,6 +311,8 @@ class kalman_filter_dependent_fusion:
                 cross_cov_ji = cross_cov_ij.copy().T  # right??
                 # TEMPORARY: try to let prior radar become the fused result, i.e. partial feedback
                 self.prior_radar = estimate
+                # append to radar tracks
+                tracks_radar.append(estimate)
 
             time += timedelta(seconds=fusion_rate)
         return tracks_fused, tracks_radar, tracks_ais
