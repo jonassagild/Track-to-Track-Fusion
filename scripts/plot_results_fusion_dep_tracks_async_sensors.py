@@ -5,6 +5,7 @@ Just temporary code to plot things. Plots fusion of independent tracks with unsy
 import numpy as np
 import scipy
 from stonesoup.types.state import GaussianState
+from stonesoup.types.update import GaussianStateUpdate
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
@@ -15,15 +16,15 @@ from utils.scenario_generator import generate_scenario_3
 from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
-save_fig = False
+save_fig = True
 
 seed = 1996
 radar_meas_rate = 1
-ais_meas_rate = 1
-timesteps = 20  # num of measurements from the slowest sensor
-sigma_process = 0.5
+ais_meas_rate = 5
+timesteps = 4  # num of measurements from the slowest sensor
+sigma_process = 1
 sigma_meas_radar = 5
-sigma_meas_ais = 5
+sigma_meas_ais = 10
 
 num_estimates = timesteps + max(ais_meas_rate, radar_meas_rate)
 
@@ -55,7 +56,7 @@ kf_dependent_fusion = kalman_filter_dependent_fusion(start_time, prior,
 measurement_model_radar = kf_dependent_fusion.measurement_model_radar
 measurement_model_ais = measurement_model_radar
 
-tracks_fused, tracks_ais, tracks_radar = kf_dependent_fusion.track_async(start_time,
+tracks_fused, tracks_radar, tracks_ais = kf_dependent_fusion.track_async(start_time,
                                                                          measurements_radar,
                                                                          measurements_ais,
                                                                          fusion_rate=1)
@@ -110,20 +111,21 @@ for state in tracks_radar:
                       width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
                       angle=np.rad2deg(orient),
                       alpha=0.2,
-                      color='r')
+                      color='b')
     ax.add_artist(ellipse)
 
 for state in tracks_ais:
-    w, v = np.linalg.eig(measurement_model_ais.matrix() @ state.covar @ measurement_model_ais.matrix().T)
-    max_ind = np.argmax(w)
-    min_ind = np.argmin(w)
-    orient = np.arctan2(v[1, max_ind], v[0, max_ind])
-    ellipse = Ellipse(xy=(state.state_vector[0], state.state_vector[2]),
-                      width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
-                      angle=np.rad2deg(orient),
-                      alpha=0.2,
-                      color='b')
-    ax.add_patch(ellipse)
+    if type(state) is GaussianStateUpdate:
+        w, v = np.linalg.eig(measurement_model_ais.matrix() @ state.covar @ measurement_model_ais.matrix().T)
+        max_ind = np.argmax(w)
+        min_ind = np.argmin(w)
+        orient = np.arctan2(v[1, max_ind], v[0, max_ind])
+        ellipse = Ellipse(xy=(state.state_vector[0], state.state_vector[2]),
+                          width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
+                          angle=np.rad2deg(orient),
+                          alpha=0.2,
+                          color='r')
+        ax.add_patch(ellipse)
 
 for track_fused in tracks_fused:
     w, v = np.linalg.eig(measurement_model_ais.matrix() @ track_fused.covar @ measurement_model_ais.matrix().T)
@@ -141,14 +143,14 @@ for track_fused in tracks_fused:
 ellipse = Ellipse(xy=(0, 0),
                   width=0,
                   height=0,
-                  color='b',
+                  color='r',
                   alpha=0.2,
                   label='Posterior AIS')
 ax.add_patch(ellipse)
 ellipse = Ellipse(xy=(0, 0),
                   width=0,
                   height=0,
-                  color='r',
+                  color='b',
                   alpha=0.2,
                   label='Posterior Radar')
 ax.add_patch(ellipse)
@@ -160,12 +162,15 @@ ellipse = Ellipse(xy=(0, 0),
                   label='Posterior Fused')
 ax.add_patch(ellipse)
 
-ax.legend()
-ax.set_title("Kalman filter tracking and fusion of dependent tracks")
+ax.legend(prop={'size': 12})
+title = "Scenario 2 with $\sigma_{AIS} = " + str(sigma_meas_ais) + "$, $\sigma_{radar} = " + str(sigma_meas_radar) + \
+        "$, and $\sigma_{process} = " + str(sigma_process) + \
+        "$.  \n Fusion is performed accounting for the common process noise \n and with partial feedback."
+ax.set_title(title, fontsize=20)
 fig.show()
 if save_fig:
-    folder = "../results/scenario3/1996"
-    name = "KF_tracking_and_fusion_dependent_tracks_diff_samp_rate"
+    folder = "../results/final_results/scenario_examples"
+    name = "scenario2_example"
     save_figure(folder, name + ".pdf", fig)
 
 # # plot estimate for estimate
