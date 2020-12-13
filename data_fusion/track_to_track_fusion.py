@@ -39,14 +39,14 @@ def fuse_dependent_tracks(track1, track2, cross_covar_ij, cross_covar_ji):
     :param cross_covar_ji:
     :return:
     """
-    P_j = track1.covar  # covar sensor j
-    P_i = track2.covar  # covar sensor i
-    x_j = track1.state_vector  # posterior sensor j
-    x_i = track2.state_vector  # posterior sensor i
+    P_i = track1.covar  # covar sensor j
+    P_j = track2.covar  # covar sensor i
+    x_i = track1.state_vector  # posterior sensor j
+    x_j = track2.state_vector  # posterior sensor i
     P_ij = cross_covar_ij
     P_ji = cross_covar_ji
 
-    # fusion equation under the error independence assumption
+    # fusion equation of dependent tracks
     fused_posterior = x_i + (P_i - P_ij) @ np.linalg.inv(P_i + P_j - P_ij - P_ji) @ (x_j - x_i)
 
     # covariance fusion equation
