@@ -20,19 +20,20 @@ from utils.latex_utils import populate_latex_table
 
 # seeds
 start_seed = 0
-end_seed = 150  # normally 500
+end_seed = 100  # normally 500
 num_mc_iterations = end_seed - start_seed
 
 # params
-save_fig = True
+save_fig = False
+print_latex = False
 
 # scenario parameters
-sigma_process_list = [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]
-sigma_meas_radar_list = [1, 5, 100, 1, 5, 100, 1, 5, 100]
-sigma_meas_ais_list = [10, 10, 10, 10, 10, 10, 10, 10, 10]
-num_steps = 50
+sigma_process_list = [3]  # [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]  # [0.05, 0.05]  #
+sigma_meas_radar_list = [200]  # [1, 5, 20, 1, 5, 20, 1, 5, 20]  # [5, 20]  #
+sigma_meas_ais_list = sigma_meas_radar_list
+num_steps = 200
+num_steps_metrics = 150
 
-# todo print the aanees and rmse in a latex friendly way
 # dicts to store final results for printing in a latex friendly way
 aanees_overall = {}
 rmse_overall = {}
@@ -57,7 +58,9 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         start_time = open_object.open_object(data_folder + "start_time.pk1")
 
         # prior
-        prior = GaussianState([1, 1.1, -1, 0.9], np.diag([1, 0.1, 1, 0.1]) ** 2, timestamp=start_time)
+        initial_covar = np.diag([sigma_meas_radar * sigma_meas_ais, sigma_meas_radar*sigma_process,
+                                 sigma_meas_radar * sigma_meas_ais, sigma_meas_radar*sigma_process]) ** 2
+        prior = GaussianState([1, 1.1, -1, 0.9], initial_covar, timestamp=start_time)
 
         # trackers
         kf_ais_as_measurement = kalman_filter_ais_as_measurement(measurements_radar, measurements_ais, start_time,
@@ -92,39 +95,45 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
         # Calculate some metrics
         stats_individual = {}
         # calculate NEES
-        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_independent, ground_truth)
+        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_independent[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
         # calculate RMSE
-        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_independent, ground_truth)
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_independent[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "independent"
         stats_overall.append(stats_individual)
 
         stats_individual = {}
         # calculate NEES
-        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent, ground_truth)
+        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_dependent[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
         # calculate RMSE
-        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_dependent, ground_truth)
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_dependent[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "dependent"
         stats_overall.append(stats_individual)
 
         stats_individual = {}
         # calculate NEES
-        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_ais_as_measurement, ground_truth)
+        stats_individual["NEES"] = calc_metrics.calc_nees(tracks_fused_ais_as_measurement[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         # calculate ANEES
         stats_individual["ANEES"] = calc_metrics.calc_anees(stats_individual["NEES"])
         # calculate RMSE
-        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_ais_as_measurement, ground_truth)
+        stats_individual["RMSE"] = calc_metrics.calc_rmse(tracks_fused_ais_as_measurement[-num_steps_metrics:],
+                                                          ground_truth[-num_steps_metrics:])
         stats_individual["seed"] = seed
         stats_individual["fusion_type"] = "ais as measurement"
         stats_overall.append(stats_individual)
 
     # plot some results
-    num_tracks = len(tracks_fused_independent)
+    num_tracks = num_steps_metrics
     alpha = 0.95
     ci_nees = scipy.stats.chi2.interval(alpha, 4)
     ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_tracks)) / num_tracks
@@ -200,20 +209,20 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_dependent_list, color='red',
                              label='Dependent')
     ax_ci_average_anees.plot(list(range(start_seed, end_seed)), average_anees_ais_as_measurement_list, color='green',
-                             label='AIS as measurement')
+                             label='KF fusion')
 
     # set title
-    title = "Average ANEES with parameters $\sigma_{process}=$" + str(sigma_process) + ",  $\sigma_{AIS}=$" + \
+    title = "ANEES with parameters $\sigma_{process}=$" + str(sigma_process) + ",  $\sigma_{AIS}=$" + \
             str(sigma_meas_ais) + ", $\sigma_{Radar}=$" + str(sigma_meas_radar)
-    ax_ci_average_anees.set_title(title)
+    ax_ci_average_anees.set_title(title, fontsize=20)
 
-    ax_ci_average_anees.legend()
+    ax_ci_average_anees.legend(prop={'size': 12})
     fig_ci_average_anees.show()
 
     if save_fig:
         fig_name = "process_" + str(sigma_process) + "_AIS_" + str(sigma_meas_ais) + "_Radar_" \
                    + str(sigma_meas_radar) + ".pdf"
-        save_figure("../results/scenario1/mc_average_anees", fig_name, fig_ci_average_anees)
+        save_figure("../results/final_results/scenario1/mc_average_anees", fig_name, fig_ci_average_anees)
 
     # print some results
     print("Process: " + str(sigma_process) + " AIS: " + str(sigma_meas_ais) + " Radar: " + str(sigma_meas_radar))
@@ -225,13 +234,14 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais in zip(sigma_process_list, s
     print("RMSE AIS as measurement: " + str(rmse_ais_as_measurement))
     print("")
 
-fusion_types = ["indep", "dep", "kf"]
-for fusion_type in fusion_types:
-    print("AANEES")
-    print(fusion_type + "\n" + populate_latex_table(aanees_overall, fusion_type))
-    print("")
-    print("RMSE")
-    print(fusion_type + "\n" + populate_latex_table(rmse_overall, fusion_type))
-    print("")
+if print_latex:
+    fusion_types = ["indep", "dep", "kf"]
+    for fusion_type in fusion_types:
+        print("AANEES")
+        print(fusion_type + "\n" + populate_latex_table(aanees_overall, fusion_type))
+        print("")
+        print("RMSE")
+        print(fusion_type + "\n" + populate_latex_table(rmse_overall, fusion_type))
+        print("")
 
 print("CI intervals: " + str(ci_average_anees_lower[-1]) + ", " + str(ci_average_anees_upper[-1]))
