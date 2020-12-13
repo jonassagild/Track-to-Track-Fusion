@@ -112,15 +112,15 @@ class kalman_filter_dependent_fusion:
             kf_gains_radar.append(kalman_gain)
             # get the transition model covar NOTE; same for AIS and radar. Name change not a bug
             predict_over_interval = measurement.timestamp - self.prior_radar.timestamp
-            transition_covars_ais.append(self.transition_model_ais.covar(time_interval=predict_over_interval))
-            transition_matrixes_ais.append(self.transition_model_ais.matrix(time_interval=predict_over_interval))
+            transition_covars_radar.append(self.transition_model_radar.covar(time_interval=predict_over_interval))
+            transition_matrixes_radar.append(self.transition_model_radar.matrix(time_interval=predict_over_interval))
             # update
             post = self.updater_radar.update(hypothesis)
             tracks_radar.append(post)
             self.prior_radar = post
 
         for measurement in self.measurements_ais:
-            prediction = self.predictor_radar.predict(self.prior_ais, timestamp=measurement.timestamp)
+            prediction = self.predictor_ais.predict(self.prior_ais, timestamp=measurement.timestamp)
             hypothesis = SingleHypothesis(prediction, measurement)
             # calculate the kalman gain
             hypothesis.measurement_prediction = self.updater_ais.predict_measurement(hypothesis.prediction,
@@ -129,8 +129,8 @@ class kalman_filter_dependent_fusion:
             kf_gains_ais.append(kalman_gain)
             # get the transition model covar
             predict_over_interval = measurement.timestamp - self.prior_ais.timestamp
-            transition_covars_radar.append(self.transition_model_radar.covar(time_interval=predict_over_interval))
-            transition_matrixes_radar.append(self.transition_model_radar.matrix(time_interval=predict_over_interval))
+            transition_covars_ais.append(self.transition_model_ais.covar(time_interval=predict_over_interval))
+            transition_matrixes_ais.append(self.transition_model_ais.matrix(time_interval=predict_over_interval))
             # update
             post = self.updater_ais.update(hypothesis)
             tracks_ais.append(post)
@@ -148,21 +148,21 @@ class kalman_filter_dependent_fusion:
         # use indexes to loop through tracks, kf_gains etc
 
         tracks_fused = []
-        tracks_fused.append(tracks_radar[0])
+        # tracks_fused.append(tracks_radar[0])
         for i in range(1, len(tracks_radar)):
             # we assume that the indexes correlates with the timestamps. I.e. that the lists are 'synchronized'
             # check to make sure
             if tracks_ais[i].timestamp == tracks_radar[i].timestamp:
                 # calculate the cross-covariance estimation error
-                cross_cov_ji.append(calc_cross_cov_estimate_error(
-                    self.measurement_model_ais.matrix(), self.measurement_model_radar.matrix(), kf_gains_ais[i],
-                    kf_gains_radar[i],
-                    transition_matrixes_ais[i], transition_covars_ais[i], cross_cov_ji[i - 1]
-                ))
                 cross_cov_ij.append(calc_cross_cov_estimate_error(
                     self.measurement_model_radar.matrix(), self.measurement_model_ais.matrix(), kf_gains_radar[i],
                     kf_gains_ais[i],
                     transition_matrixes_radar[i], transition_covars_ais[i], cross_cov_ij[i - 1]
+                ))
+                cross_cov_ji.append(calc_cross_cov_estimate_error(
+                    self.measurement_model_ais.matrix(), self.measurement_model_radar.matrix(), kf_gains_ais[i],
+                    kf_gains_radar[i],
+                    transition_matrixes_ais[i], transition_covars_radar[i], cross_cov_ji[i - 1]
                 ))
 
                 # test for track association
