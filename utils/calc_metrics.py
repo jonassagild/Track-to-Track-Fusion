@@ -47,7 +47,7 @@ def calc_rmse(tracks: Track, ground_truths: GroundTruthPath):
     """
     errors = [gt.state_vector - track.state_vector for track, gt in zip(tracks, ground_truths)]
     squared_errors = np.array([err.T @ err for err in errors]).flatten()[:, None]
-    mean_squared_error = squared_errors.T @ squared_errors
+    mean_squared_error = squared_errors.mean()
     rmse = np.sqrt(mean_squared_error)
     return rmse.flatten()[0]
 
