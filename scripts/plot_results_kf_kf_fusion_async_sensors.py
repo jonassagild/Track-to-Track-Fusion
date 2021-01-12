@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 
-from trackers.kf_kf_fusion_unsync_sensors import KFFusionUnsyncSensors
+from trackers.kf_kf_fusion_async_sensors import KFFusionUnsyncSensors
 
 from utils.scenario_generator import generate_scenario_3
 from utils import open_object, calc_metrics

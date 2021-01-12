@@ -24,12 +24,12 @@ end_seed = 100  # normally 500
 num_mc_iterations = end_seed - start_seed
 
 # params
-save_fig = False
-print_latex = False
+save_fig = True
+print_latex = True
 
 # scenario parameters
-sigma_process_list = [3]  # [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]  # [0.05, 0.05]  #
-sigma_meas_radar_list = [200]  # [1, 5, 20, 1, 5, 20, 1, 5, 20]  # [5, 20]  #
+sigma_process_list = [0.05, 0.05, 0.05, 0.5, 0.5, 0.5, 3, 3, 3]  # [0.05, 0.05]  #
+sigma_meas_radar_list = [1, 5, 20, 1, 5, 20, 1, 5, 20]  # [5, 20]  #
 sigma_meas_ais_list = sigma_meas_radar_list
 num_steps = 200
 num_steps_metrics = 150
