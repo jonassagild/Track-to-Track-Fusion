@@ -131,3 +131,6 @@ dmypy.json
 # scenarios
 scenarios/
 
+# DS_Store
+*.DS_Store
+
