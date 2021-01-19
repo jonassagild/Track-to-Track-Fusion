@@ -281,8 +281,8 @@ ax_ci_anees_vs_meas.plot(meas_rates, ci_upper, color='black')
 
 # assumes that noise lists doesn't change
 # todo: change title
-title = "ANEES with changing AIS measurement rate \n parameters $\sigma_{process}=$" + str(sigma_process_list[0]) + ",  $\sigma_{AIS}=$" + \
-        str(sigma_meas_ais_list[0]) + ", $\sigma_{Radar}=$" + str(sigma_meas_radar_list[0])
+title = "ANEES with changing AIS measurement rate \n parameters $\sigma_{process}=$" + str(sigma_process_list[0]) + \
+        ",  $\sigma_{AIS}=$" + str(sigma_meas_ais_list[0]) + ", $\sigma_{Radar}=$" + str(sigma_meas_radar_list[0])
 ax_ci_anees_vs_meas.set_title(title, fontsize=20)
 ax_ci_anees_vs_meas.legend(prop={'size': 12})
 fig_ci_anees_vs_meas_rate.show()
@@ -292,4 +292,5 @@ if save_anees_vs_meas_rate_fig:
                + str(sigma_meas_radar_list[0]) + "_MC_" + str(num_mc_iterations) + ".pdf"
     save_figure("../results/final_results/scenario2/diff_ais_meas_rate", fig_name, fig_ci_anees_vs_meas_rate)
 
-print("CI intervals: (This is wrong for diff meas rate) " + str(ci_average_anees_lower[-1]) + ", " + str(ci_average_anees_upper[-1]))
+print("CI intervals: (This is wrong for diff meas rate) " + str(ci_average_anees_lower[-1]) + ", " +
+      str(ci_average_anees_upper[-1]))
