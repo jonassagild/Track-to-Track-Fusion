@@ -1,6 +1,5 @@
-"""plot_stuff script to plot things
+"""script for plotting and testing association techniques
 
-Just temporary code to plot things. Plots fusion of independent tracks with unsychronised sensors
 """
 import numpy as np
 import scipy

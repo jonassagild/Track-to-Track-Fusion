@@ -14,7 +14,7 @@ from utils.latex_utils import populate_latex_table
 from utils.scenario_generator import generate_scenario_3
 from trackers.kf_kf_fusion_async_sensors import KFFusionUnsyncSensors
 from trackers.kf_independent_fusion_async_sensors import kalman_filter_independent_fusion
-from trackers.kf_dependent_fusion_async_sensors import kalman_filter_dependent_fusion
+from trackers.kf_dependent_fusion_async_sensors import KalmanFilterDependentFusionAsyncSensors
 
 from utils.save_figures import save_figure
 
@@ -83,11 +83,11 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais, ais_meas_rate in zip(sigma_
         #                                                          sigma_process_ais=sigma_process,
         #                                                          sigma_meas_radar=sigma_meas_radar,
         #                                                          sigma_meas_ais=sigma_meas_ais)
-        kf_dependent_fusion = kalman_filter_dependent_fusion(start_time, prior,
-                                                             sigma_process_radar=sigma_process,
-                                                             sigma_process_ais=sigma_process,
-                                                             sigma_meas_radar=sigma_meas_radar,
-                                                             sigma_meas_ais=sigma_meas_ais)
+        kf_dependent_fusion = KalmanFilterDependentFusionAsyncSensors(start_time, prior,
+                                                                      sigma_process_radar=sigma_process,
+                                                                      sigma_process_ais=sigma_process,
+                                                                      sigma_meas_radar=sigma_meas_radar,
+                                                                      sigma_meas_ais=sigma_meas_ais)
 
         # tracks_fused_independent, _, _ = kf_independent_fusion.track(start_time, measurements_radar, measurements_ais,
         #                                                              fusion_rate=1)

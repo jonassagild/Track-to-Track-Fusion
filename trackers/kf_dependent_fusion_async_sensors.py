@@ -26,7 +26,7 @@ from data_fusion import track_to_track_fusion
 from trackers.calc_cross_cov_estimate_error import calc_cross_cov_estimate_error, calc_partial_feedback_cross_cov
 
 
-class kalman_filter_dependent_fusion:
+class KalmanFilterDependentFusionAsyncSensors:
     """
     todo
     """
@@ -297,7 +297,7 @@ class kalman_filter_dependent_fusion:
             )
 
             same_target = True  # ignore test for track association for now
-            if same_target:
+            if same_target: 
                 fused_posterior, fused_covar = track_to_track_fusion.fuse_dependent_tracks(self.prior_radar,
                                                                                            self.prior_ais,
                                                                                            cross_cov_ij,
