@@ -1,5 +1,8 @@
 """script for plotting and testing association techniques
 
+The script uses the Kalman Filter from Stone Soup to produce tracks in a similar fashion as done in the Tracker Classes.
+
+
 """
 import numpy as np
 import scipy
@@ -8,14 +11,14 @@ from stonesoup.types.update import GaussianStateUpdate
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
-
+from data_association.CountingAssociator import CountingAssociator
 from trackers.kf_dependent_fusion_async_sensors import KalmanFilterDependentFusionAsyncSensors
 
 from utils.scenario_generator import generate_scenario_3
 from utils import open_object, calc_metrics
 from utils.save_figures import save_figure
 
-save_fig = True
+save_fig = False
 
 seed = 1996
 radar_meas_rate = 1
@@ -59,29 +62,23 @@ tracks_fused, tracks_radar, tracks_ais = kf_dependent_fusion.track_async(start_t
                                                                          measurements_radar,
                                                                          measurements_ais,
                                                                          fusion_rate=1)
-# calculate CI
-alpha = 0.9
-ci_nees = scipy.stats.chi2.interval(alpha, 4)
-ci_anees = np.array(scipy.stats.chi2.interval(alpha, 4 * num_estimates)) / num_estimates
 
-# calculate some metrics
-# calculate NEES
-nees = calc_metrics.calc_nees(tracks_fused, ground_truth)
-# calculate ANEES
-anees = calc_metrics.calc_anees(nees)
-# calculate RMSE
-rmse = calc_metrics.calc_rmse(tracks_fused, ground_truth)
-# calculate percentage NEES within CI
-percentage_nees_within_CI = calc_metrics.calc_percentage_nees_within_ci(nees, ci_nees)
+# todo: use association class to check whether it is associated
+association_distance_threshold = 10
+consecutive_hits_confirm_association = 3
+consecutive_misses_end_association = 2
+associator = CountingAssociator(association_distance_threshold, consecutive_hits_confirm_association,
+                                consecutive_misses_end_association)
 
-metrics_info = "Percentage NEES within CI: " + str(percentage_nees_within_CI) + "\n" + "RMSE: " + str(rmse) + "\n" + \
-               "ANEES: " + str(anees) + "\n" + "Alpha: " + str(alpha) + "\n" + "CI NEES: " + str(ci_nees) + "\n" + \
-               "CI ANEES: " + str(ci_anees)
-print(metrics_info)
+# todo: loop through the radar and ais tracks and apply the associator
+# assumes same number of radar and ais tracks (a valid assumption)
+for i in range(1, len(tracks_radar)):
+    # use the associator to check the association
+    associated = associator.associate_tracks(tracks_radar[:i], tracks_ais[:i])
+    # print(associated.__str__())
 
 
-
-# plot
+# plot and check for association, one by one
 fig = plt.figure(figsize=(10, 6))
 ax = fig.add_subplot(1, 1, 1)
 ax.set_xlabel("$x$")
@@ -100,22 +97,24 @@ ax.scatter([state.state_vector[0] for state in measurements_ais],
            color='r',
            label='Measurements AIS')
 
-# add ellipses to the posteriors
-for state in tracks_radar:
-    w, v = np.linalg.eig(measurement_model_radar.matrix() @ state.covar @ measurement_model_radar.matrix().T)
-    max_ind = np.argmax(w)
-    min_ind = np.argmin(w)
-    orient = np.arctan2(v[1, max_ind], v[0, max_ind])
-    ellipse = Ellipse(xy=(state.state_vector[0], state.state_vector[2]),
-                      width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
-                      angle=np.rad2deg(orient),
+# add ellipses to add legend
+for text, color in zip(['Posterior AIS', 'Posterior Radar'], ['r', 'b']):
+    ellipse = Ellipse(xy=(0, 0),
+                      width=0,
+                      height=0,
+                      color=color,
                       alpha=0.2,
-                      color='b')
-    ax.add_artist(ellipse)
+                      label=text)
+    ax.add_patch(ellipse)
 
-for state in tracks_ais:
-    if type(state) is GaussianStateUpdate:
-        w, v = np.linalg.eig(measurement_model_ais.matrix() @ state.covar @ measurement_model_ais.matrix().T)
+# add ellipses to the posteriors
+for i in range(0, len(tracks_radar)):
+    state_radar = tracks_radar[i]
+    state_ais = tracks_ais[i]
+
+    # add ellipse to figure
+    for state, color in zip([state_radar, state_ais], ['b', 'r']):
+        w, v = np.linalg.eig(measurement_model_radar.matrix() @ state.covar @ measurement_model_radar.matrix().T)
         max_ind = np.argmax(w)
         min_ind = np.argmin(w)
         orient = np.arctan2(v[1, max_ind], v[0, max_ind])
@@ -123,48 +122,20 @@ for state in tracks_ais:
                           width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
                           angle=np.rad2deg(orient),
                           alpha=0.2,
-                          color='r')
-        ax.add_patch(ellipse)
+                          color=color)
+        ax.add_artist(ellipse)
 
-for track_fused in tracks_fused:
-    w, v = np.linalg.eig(measurement_model_ais.matrix() @ track_fused.covar @ measurement_model_ais.matrix().T)
-    max_ind = np.argmax(w)
-    min_ind = np.argmin(w)
-    orient = np.arctan2(v[1, max_ind], v[0, max_ind])
-    ellipse = Ellipse(xy=(track_fused.state_vector[0], track_fused.state_vector[2]),
-                      width=2 * np.sqrt(w[max_ind]), height=2 * np.sqrt(w[min_ind]),
-                      angle=np.rad2deg(orient),
-                      alpha=0.5,
-                      color='green')
-    ax.add_patch(ellipse)
-
-# add ellipses to add legend todo do this less ugly
-ellipse = Ellipse(xy=(0, 0),
-                  width=0,
-                  height=0,
-                  color='r',
-                  alpha=0.2,
-                  label='Posterior AIS')
-ax.add_patch(ellipse)
-ellipse = Ellipse(xy=(0, 0),
-                  width=0,
-                  height=0,
-                  color='b',
-                  alpha=0.2,
-                  label='Posterior Radar')
-ax.add_patch(ellipse)
-ellipse = Ellipse(xy=(0, 0),
-                  width=0,
-                  height=0,
-                  color='green',
-                  alpha=0.5,
-                  label='Posterior Fused')
-ax.add_patch(ellipse)
+    # todo: check association, print association and display figure
+    associated = associator.associate_tracks(tracks_radar[:i+1], tracks_ais[:i+1])
+    ax.legend(prop={'size': 12})
+    title = "association = " + associated.__str__()
+    ax.set_title(title, fontsize=20)
+    fig.show()
+    # todo: add additional information, as num consecutive hits and misses, within threshold etc
+    print("next")
 
 ax.legend(prop={'size': 12})
-title = "Scenario 2 with $\sigma_{AIS} = " + str(sigma_meas_ais) + "$, $\sigma_{radar} = " + str(sigma_meas_radar) + \
-        "$, and $\sigma_{process} = " + str(sigma_process) + \
-        "$.  \n Fusion is performed accounting for the common process noise \n and with partial feedback."
+title = "Figure for testing association"
 ax.set_title(title, fontsize=20)
 fig.show()
 if save_fig:
