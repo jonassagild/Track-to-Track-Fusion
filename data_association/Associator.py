@@ -7,5 +7,5 @@ class Associator:
     def __init__(self):
         pass
 
-    def associate_tracks(self, track1, track2):
+    def associate_tracks(self, tracks1, tracks2):
         pass

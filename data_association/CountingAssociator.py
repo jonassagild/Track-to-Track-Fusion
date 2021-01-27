@@ -51,12 +51,11 @@ class CountingAssociator(Associator):
                 self.num_consecutive_hits = 0
                 return True
             # don't associate and reset number of consecutive hits
-            # todo: check if this cover all the cases the tracks where previously associated
             else:
                 self.associated = False
                 self.num_consecutive_misses = 0  # reset as association is cancelled
                 self.num_consecutive_hits = 0
-                return False
+                return self.associated
         else:
             if distance < self.association_distance_threshold:
                 self.num_consecutive_hits += 1
@@ -65,3 +64,4 @@ class CountingAssociator(Associator):
             else:
                 self.num_consecutive_misses += 1  # not really necessary
                 self.num_consecutive_hits = 0
+                return False
