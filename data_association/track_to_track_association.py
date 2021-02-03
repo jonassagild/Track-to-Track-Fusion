@@ -19,7 +19,7 @@ def test_association_independent_tracks(track1, track2, alpha=0.05):
     error_delta_estimates = delta_estimates  # as the difference of the true states is 0 if it is the same target
     error_delta_estimates_covar = track1.covar + track2.covar  # under the error independence assumption
 
-    d = error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates
+    d = (error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates)[0]
 
     # 4 degrees of freedom as we have 4 dimensions in the state vector
     d_alpha = chi2.ppf((1 - alpha), df=4)
@@ -44,7 +44,7 @@ def test_association_dependent_tracks(track1, track2, cross_cov_ij, cross_cov_ji
     # independence
     # assumption
 
-    d = error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates
+    d = (error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates)[0]
 
     # 4 degrees of freedom as we have 4 dimensions in the state vector
     d_alpha = chi2.ppf((1 - alpha), df=4)
