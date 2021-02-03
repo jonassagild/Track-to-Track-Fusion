@@ -24,7 +24,7 @@ class CountingAssociator(Associator):
         self.consecutive_hits_confirm_association = consecutive_hits_confirm_association
         self.consecutive_misses_end_association = consecutive_misses_end_association
 
-    def associate_tracks(self, tracks1, tracks2):
+    def associate_tracks(self, tracks1, tracks2, **kwargs):
         """
         Checks for association using the counting technique. The algorithm is described in detail in the report.
 
