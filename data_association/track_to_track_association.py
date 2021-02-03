@@ -7,7 +7,7 @@ import numpy as np
 from scipy.stats.distributions import chi2
 
 
-def test_association_independent_tracks(track1, track2, alpha):
+def test_association_independent_tracks(track1, track2, alpha=0.05):
     """
     Checks whether the tracks are from the same target, under the independence assumption
     :param track1: track to check for association
@@ -28,7 +28,7 @@ def test_association_independent_tracks(track1, track2, alpha):
     return d <= d_alpha
 
 
-def test_association_dependent_tracks(track1, track2, cross_cov_ij, cross_cov_ji, alpha):
+def test_association_dependent_tracks(track1, track2, cross_cov_ij, cross_cov_ji, alpha=0.05):
     """
     checks whether the tracks are from the same target, when the dependence is accounted for.
     :param track1: track to check for association
