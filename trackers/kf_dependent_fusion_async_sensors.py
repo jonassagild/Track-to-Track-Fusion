@@ -72,6 +72,7 @@ class KalmanFilterDependentFusionAsyncSensors:
         # create prior, both trackers use the same starting point
         self.prior_radar = prior
         self.prior_ais = prior
+        self.cross_cov_list = []
 
     def track(self, measurements_radar, measurements_ais):
         """
@@ -136,6 +137,7 @@ class KalmanFilterDependentFusionAsyncSensors:
 
         cross_cov_ij = [np.zeros([4, 4])]
         cross_cov_ji = [np.zeros([4, 4])]
+        self.cross_cov_list.append(cross_cov_ij)
 
         # TODO change flow to assume that the indexes decide whether its from the same iterations
         # use indexes to loop through tracks, kf_gains etc
@@ -156,6 +158,7 @@ class KalmanFilterDependentFusionAsyncSensors:
                     kf_gains_ais[i],
                     transition_matrices_radar[i], transition_covars_ais[i], cross_cov_ij[i - 1]
                 ))
+                self.cross_cov_list.append(cross_cov_ij)
 
                 # test for track association
                 # same_target = track_to_track_association.test_association_dependent_tracks(tracks_radar[i],
@@ -188,6 +191,7 @@ class KalmanFilterDependentFusionAsyncSensors:
 
         cross_cov_ij = np.zeros([4, 4])
         cross_cov_ji = np.zeros([4, 4])
+        self.cross_cov_list.append(cross_cov_ij)
 
         measurements_radar = measurements_radar.copy()
         measurements_ais = measurements_ais.copy()
@@ -305,6 +309,7 @@ class KalmanFilterDependentFusionAsyncSensors:
                 # append to radar tracks
                 tracks_radar.append(estimate)
 
+            self.cross_cov_list.append(cross_cov_ij)
             time += timedelta(seconds=fusion_rate)
         return tracks_fused, tracks_radar, tracks_ais
 
