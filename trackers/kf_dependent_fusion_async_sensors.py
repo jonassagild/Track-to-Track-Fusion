@@ -137,7 +137,6 @@ class KalmanFilterDependentFusionAsyncSensors:
 
         cross_cov_ij = [np.zeros([4, 4])]
         cross_cov_ji = [np.zeros([4, 4])]
-        self.cross_cov_list.append(cross_cov_ij)
 
         # TODO change flow to assume that the indexes decide whether its from the same iterations
         # use indexes to loop through tracks, kf_gains etc
@@ -191,7 +190,6 @@ class KalmanFilterDependentFusionAsyncSensors:
 
         cross_cov_ij = np.zeros([4, 4])
         cross_cov_ji = np.zeros([4, 4])
-        self.cross_cov_list.append(cross_cov_ij)
 
         measurements_radar = measurements_radar.copy()
         measurements_ais = measurements_ais.copy()
