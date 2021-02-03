@@ -7,15 +7,16 @@ The script uses the Kalman Filter from Stone Soup to produce tracks in a similar
 import numpy as np
 import scipy
 from stonesoup.types.state import GaussianState
-from stonesoup.types.update import GaussianStateUpdate
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 from data_association.CountingAssociator import CountingAssociator
+from data_association.bar_shalom_hypothesis_associators import HypothesisTestIndependenceAssociator, \
+    HypothesisTestDependenceAssociator
 from trackers.kf_dependent_fusion_async_sensors import KalmanFilterDependentFusionAsyncSensors
 
 from utils.scenario_generator import generate_scenario_3
-from utils import open_object, calc_metrics
+from utils import open_object
 from utils.save_figures import save_figure
 
 save_fig = False
@@ -62,22 +63,15 @@ tracks_fused, tracks_radar, tracks_ais = kf_dependent_fusion.track_async(start_t
                                                                          measurements_radar,
                                                                          measurements_ais,
                                                                          fusion_rate=1)
-
-# todo: use association class to check whether it is associated
+cross_cov_list = kf_dependent_fusion.cross_cov_list
+# counting technique parameters
 association_distance_threshold = 10
 consecutive_hits_confirm_association = 3
 consecutive_misses_end_association = 2
 counting_associator = CountingAssociator(association_distance_threshold, consecutive_hits_confirm_association,
                                          consecutive_misses_end_association)
-independence_test_associator =
-
-# todo: loop through the radar and ais tracks and apply the associator
-# assumes same number of radar and ais tracks (a valid assumption)
-for i in range(1, len(tracks_radar)):
-    # use the associator to check the association
-    associated = counting_associator.associate_tracks(tracks_radar[:i], tracks_ais[:i])
-    # print(associated.__str__())
-
+independence_test_associator = HypothesisTestIndependenceAssociator()
+dependence_test_associator = HypothesisTestDependenceAssociator()
 
 # plot and check for association, one by one
 fig = plt.figure(figsize=(10, 6))
@@ -127,9 +121,23 @@ for i in range(0, len(tracks_radar)):
         ax.add_artist(ellipse)
 
     # todo: check association, print association and display figure
-    associated = counting_associator.associate_tracks(tracks_radar[:i + 1], tracks_ais[:i + 1])
+    associated_counting_technique = counting_associator.associate_tracks(tracks_radar[:i + 1], tracks_ais[:i + 1])
+    associated_independence_test = independence_test_associator.associate_tracks(tracks_radar[:i + 1],
+                                                                                 tracks_ais[:i + 1])
+    cross_cov_dict = {'cross_cov_ij': cross_cov_list,
+                      'cross_cov_ji': [cross_cov.transpose() for cross_cov in cross_cov_list]}
+    associated_dependence_test = dependence_test_associator.associate_tracks(tracks_radar[:i + 1],
+                                                                             tracks_ais[:i + 1],
+                                                                             cross_cov_ij=cross_cov_list[:i + 1],
+                                                                             cross_cov_ji=[cross_cov.transpose()
+                                                                                           for cross_cov
+                                                                                           in cross_cov_list[:i + 1]]
+                                                                             )
+
     ax.legend(prop={'size': 12})
-    title = "association = " + associated.__str__()
+    title = "counting association: " + associated_counting_technique.__str__() + \
+            ",\n independent hypothesis association: " + associated_independence_test.__str__() + \
+            ",\n dependent hypothesis association: " + associated_dependence_test.__str__()
     ax.set_title(title, fontsize=20)
     fig.show()
     # todo: add additional information, as num consecutive hits and misses, within threshold etc
