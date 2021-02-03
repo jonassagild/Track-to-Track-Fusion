@@ -1,6 +1,6 @@
 """ kalman_filter_dependent_fusion
 
-Fusion of dependent kalman filter trakcs with unsync sensors. Follows Bar-Shaloms formulas for doing so.
+Fusion of dependent kalman filter tracks with async sensors. Follows Bar-Shaloms formulas for doing so.
 """
 
 import numpy as np
@@ -29,9 +29,6 @@ class KalmanFilterDependentFusionAsyncSensors:
     def __init__(self, start_time, prior: GaussianState,
                  sigma_process_radar=0.01, sigma_process_ais=0.01, sigma_meas_radar=3, sigma_meas_ais=1):
         """
-
-        :param measurements_radar:
-        :param measurements_ais:
         :param start_time:
         :param prior:
         :param sigma_process_radar:
@@ -89,9 +86,9 @@ class KalmanFilterDependentFusionAsyncSensors:
         transition_covars_radar = []
         transition_covars_ais = []
 
-        # create list for storing tranisition matrixes
-        transition_matrixes_radar = []
-        transition_matrixes_ais = []
+        # create list for storing transition matrices
+        transition_matrices_radar = []
+        transition_matrices_ais = []
 
         # create list for storing tracks
         tracks_radar = Track()
@@ -109,7 +106,7 @@ class KalmanFilterDependentFusionAsyncSensors:
             # get the transition model covar
             predict_over_interval = measurement.timestamp - self.prior_radar.timestamp
             transition_covars_ais.append(self.transition_model_ais.covar(time_interval=predict_over_interval))
-            transition_matrixes_ais.append(self.transition_model_ais.matrix(time_interval=predict_over_interval))
+            transition_matrices_ais.append(self.transition_model_ais.matrix(time_interval=predict_over_interval))
             # update
             post = self.updater_radar.update(hypothesis)
             tracks_radar.append(post)
@@ -126,7 +123,7 @@ class KalmanFilterDependentFusionAsyncSensors:
             # get the transition model covar
             predict_over_interval = measurement.timestamp - self.prior_ais.timestamp
             transition_covars_radar.append(self.transition_model_radar.covar(time_interval=predict_over_interval))
-            transition_matrixes_radar.append(self.transition_model_radar.matrix(time_interval=predict_over_interval))
+            transition_matrices_radar.append(self.transition_model_radar.matrix(time_interval=predict_over_interval))
             # update
             post = self.updater_ais.update(hypothesis)
             tracks_ais.append(post)
@@ -134,8 +131,8 @@ class KalmanFilterDependentFusionAsyncSensors:
 
         # FOR NOW: run track_to_track_association here, todo change pipeline flow
         # FOR NOW: run the association only when both have a new posterior (so each time the AIS has a posterior)
-        # todo handle fusion when one track predicts and the other updates. (or both predicts) (Can't be done with the theory
-        #  described in the article)
+        # todo handle fusion when one track predicts and the other updates. (or both predicts) (Can't be done with the
+        #  theory described in the article)
 
         cross_cov_ij = [np.zeros([4, 4])]
         cross_cov_ji = [np.zeros([4, 4])]
@@ -143,8 +140,7 @@ class KalmanFilterDependentFusionAsyncSensors:
         # TODO change flow to assume that the indexes decide whether its from the same iterations
         # use indexes to loop through tracks, kf_gains etc
 
-        tracks_fused = []
-        tracks_fused.append(tracks_radar[0])
+        tracks_fused = [tracks_radar[0]]
         for i in range(1, len(tracks_radar)):
             # we assume that the indexes correlates with the timestamps. I.e. that the lists are 'synchronized'
             # check to make sure
@@ -153,12 +149,12 @@ class KalmanFilterDependentFusionAsyncSensors:
                 cross_cov_ji.append(calc_cross_cov_estimate_error(
                     self.measurement_model_ais.matrix(), self.measurement_model_radar.matrix(), kf_gains_ais[i],
                     kf_gains_radar[i],
-                    transition_matrixes_ais[i], transition_covars_ais[i], cross_cov_ji[i - 1]
+                    transition_matrices_ais[i], transition_covars_ais[i], cross_cov_ji[i - 1]
                 ))
                 cross_cov_ij.append(calc_cross_cov_estimate_error(
                     self.measurement_model_radar.matrix(), self.measurement_model_ais.matrix(), kf_gains_radar[i],
                     kf_gains_ais[i],
-                    transition_matrixes_radar[i], transition_covars_ais[i], cross_cov_ij[i - 1]
+                    transition_matrices_radar[i], transition_covars_ais[i], cross_cov_ij[i - 1]
                 ))
 
                 # test for track association
@@ -258,7 +254,7 @@ class KalmanFilterDependentFusionAsyncSensors:
                 # calc kalman gain
                 # calculate the kalman gain
                 hypothesis.measurement_prediction = self.updater_radar.predict_measurement(hypothesis.prediction,
-                                                                                         measurement_model=self.measurement_model_radar)
+                                                                                           measurement_model=self.measurement_model_radar)
                 post_cov, kf_gain_radar = self.updater_radar._posterior_covariance(hypothesis)
                 # get the transition model covar
                 predict_over_interval = measurement.timestamp - self.prior_radar.timestamp
@@ -292,7 +288,7 @@ class KalmanFilterDependentFusionAsyncSensors:
             )
 
             same_target = True  # ignore test for track association for now
-            if same_target: 
+            if same_target:
                 fused_posterior, fused_covar = track_to_track_fusion.fuse_dependent_tracks(self.prior_radar,
                                                                                            self.prior_ais,
                                                                                            cross_cov_ij,
