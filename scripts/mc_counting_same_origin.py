@@ -1,14 +1,14 @@
-"""MC_COUNTING_TECHNIQUE
-
-Script to
-
+"""
+script to run mc sims on the three associations techniques when the tracks origin are equal. Used to calculate the
+total number of correctly associating tracks and total # falsly not associating tracks from the same target.
 """
 
-# seeds
 import numpy as np
 from stonesoup.types.state import GaussianState
 
 from data_association.CountingAssociator import CountingAssociator
+from data_association.bar_shalom_hypothesis_associators import HypothesisTestDependenceAssociator, \
+    HypothesisTestIndependenceAssociator
 from trackers.kf_dependent_fusion_async_sensors import KalmanFilterDependentFusionAsyncSensors
 from utils import open_object
 from utils.scenario_generator import generate_scenario_3
