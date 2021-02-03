@@ -39,5 +39,5 @@ class HypothesisTestDependenceAssociator(Associator):
         """
         Performs an hypothesis test to check for association
         """
-        return test_association_dependent_tracks(tracks1[-1], tracks2[-1], cross_cov_ij=kwargs['cross_cov_ij'],
-                                                 cross_cov_ji=kwargs['cross_cov_ji'])
+        return test_association_dependent_tracks(tracks1[-1], tracks2[-1], cross_cov_ij=kwargs['cross_cov_ij'][-1],
+                                                 cross_cov_ji=kwargs['cross_cov_ji'][-1])
