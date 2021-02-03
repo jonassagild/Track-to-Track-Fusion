@@ -5,8 +5,6 @@ Fusion of idenpendent tracks with unsynchronized sensors
 
 import numpy as np
 
-from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
 from stonesoup.models.measurement.linear import LinearGaussian
 from stonesoup.models.transition.linear import CombinedLinearGaussianTransitionModel, ConstantVelocity
 from stonesoup.predictor.kalman import KalmanPredictor
@@ -17,9 +15,6 @@ from stonesoup.types.track import Track
 
 from datetime import timedelta
 
-from utils import open_object
-
-from data_fusion import track_to_track_association
 from data_fusion import track_to_track_fusion
 
 class kalman_filter_independent_fusion:

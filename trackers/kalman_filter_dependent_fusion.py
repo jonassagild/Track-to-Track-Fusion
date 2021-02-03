@@ -5,8 +5,6 @@ Uses the test and using taking the dependence into account. Follows Bar-Shaloms 
 
 import numpy as np
 
-from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
 from stonesoup.models.measurement.linear import LinearGaussian
 from stonesoup.models.transition.linear import CombinedLinearGaussianTransitionModel, ConstantVelocity
 from stonesoup.predictor.kalman import KalmanPredictor
@@ -15,9 +13,6 @@ from stonesoup.updater.kalman import KalmanUpdater
 from stonesoup.types.hypothesis import SingleHypothesis
 from stonesoup.types.track import Track
 
-from utils import open_object
-
-from data_fusion import track_to_track_association
 from data_fusion import track_to_track_fusion
 
 from trackers.calc_cross_cov_estimate_error import calc_cross_cov_estimate_error
