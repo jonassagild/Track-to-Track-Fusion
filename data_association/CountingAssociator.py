@@ -7,9 +7,6 @@ class CountingAssociator(Associator):
     """
     Class for the CountingAssociator
     """
-    associated = False
-    num_consecutive_hits = 0
-    num_consecutive_misses = 0
 
     def __init__(self, association_distance_threshold=10, consecutive_hits_confirm_association=3,
                  consecutive_misses_end_association=2):
@@ -23,6 +20,9 @@ class CountingAssociator(Associator):
         self.association_distance_threshold = association_distance_threshold
         self.consecutive_hits_confirm_association = consecutive_hits_confirm_association
         self.consecutive_misses_end_association = consecutive_misses_end_association
+        self.associated = False
+        self.num_consecutive_hits = 0
+        self.num_consecutive_misses = 0
 
     def associate_tracks(self, tracks1, tracks2, **kwargs):
         """
