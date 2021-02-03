@@ -67,14 +67,15 @@ tracks_fused, tracks_radar, tracks_ais = kf_dependent_fusion.track_async(start_t
 association_distance_threshold = 10
 consecutive_hits_confirm_association = 3
 consecutive_misses_end_association = 2
-associator = CountingAssociator(association_distance_threshold, consecutive_hits_confirm_association,
-                                consecutive_misses_end_association)
+counting_associator = CountingAssociator(association_distance_threshold, consecutive_hits_confirm_association,
+                                         consecutive_misses_end_association)
+independence_test_associator =
 
 # todo: loop through the radar and ais tracks and apply the associator
 # assumes same number of radar and ais tracks (a valid assumption)
 for i in range(1, len(tracks_radar)):
     # use the associator to check the association
-    associated = associator.associate_tracks(tracks_radar[:i], tracks_ais[:i])
+    associated = counting_associator.associate_tracks(tracks_radar[:i], tracks_ais[:i])
     # print(associated.__str__())
 
 
@@ -126,7 +127,7 @@ for i in range(0, len(tracks_radar)):
         ax.add_artist(ellipse)
 
     # todo: check association, print association and display figure
-    associated = associator.associate_tracks(tracks_radar[:i+1], tracks_ais[:i+1])
+    associated = counting_associator.associate_tracks(tracks_radar[:i + 1], tracks_ais[:i + 1])
     ax.legend(prop={'size': 12})
     title = "association = " + associated.__str__()
     ax.set_title(title, fontsize=20)
