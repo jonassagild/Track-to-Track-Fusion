@@ -31,10 +31,10 @@ ais_meas_rate_list = [6]  # relevant AIS meas rates: 2 - 12
 timesteps = 200
 
 # associator params
-association_distance_threshold = 10
+association_distance_threshold = 20
 consecutive_hits_confirm_association = 3
 consecutive_misses_end_association = 2
-alpha = 0.95
+alpha = 0.02
 
 # dicts to store final results for printing in a latex friendly way
 Pc_overall = {}  # Pc is the percentage of correctly associating tracks that originate from the same target
@@ -78,8 +78,8 @@ for sigma_process, sigma_meas_radar, sigma_meas_ais, ais_meas_rate in zip(sigma_
         # use the CountingAssociator to evaluate whether the tracks are associated
         associator = CountingAssociator(association_distance_threshold, consecutive_hits_confirm_association,
                                         consecutive_misses_end_association)
-        independence_test_associator = HypothesisTestIndependenceAssociator()
-        dependence_test_associator = HypothesisTestDependenceAssociator()
+        independence_test_associator = HypothesisTestIndependenceAssociator(alpha=alpha)
+        dependence_test_associator = HypothesisTestDependenceAssociator(alpha=alpha)
 
         num_correct_associations_counting = 0
         num_false_mis_associations_counting = 0
@@ -175,4 +175,4 @@ text = "Total: \ncounting: " + str(tot_percentage_correct_counting) + \
        ", independent: " + str(tot_percentage_correct_independent_hypothesis) + \
        ", dependent: " + str(tot_percentage_correct_dependent_hypothesis)
 
-print("")
+print(text)
