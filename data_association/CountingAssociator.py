@@ -3,7 +3,7 @@ from data_association.Associator import Associator
 import numpy
 
 
-class CountingAssociator(Associator):
+class CountingAssociator:
     """
     Class for the CountingAssociator
     """
@@ -20,11 +20,11 @@ class CountingAssociator(Associator):
         self.association_distance_threshold = association_distance_threshold
         self.consecutive_hits_confirm_association = consecutive_hits_confirm_association
         self.consecutive_misses_end_association = consecutive_misses_end_association
-        self.associated = False
-        self.num_consecutive_hits = 0
-        self.num_consecutive_misses = 0
+        # self.associated = False
+        # self.num_consecutive_hits = 0
+        # self.num_consecutive_misses = 0
 
-    def associate_tracks(self, tracks1, tracks2, **kwargs):
+    def associate_tracks(self, tracks1, tracks2, association_info, **kwargs):
         """
         Checks for association using the counting technique. The algorithm is described in detail in the report.
 
@@ -34,6 +34,7 @@ class CountingAssociator(Associator):
 
         :param tracks1:
         :param tracks2:
+        :param association_info: object of type CountingAssociationInfo
         :return: true to the last element of tracks1 and tracks2 are considered associated, and false if they are not
         considered associated
         """
@@ -41,27 +42,28 @@ class CountingAssociator(Associator):
         distance = numpy.linalg.norm(tracks1[-1].state_vector - tracks2[-1].state_vector)
 
         # todo: implement the logic specified
-        if self.associated:
+        if association_info.associated:
             # associate if within distance
             if distance < self.association_distance_threshold:
-                return True
+                return association_info
             # associate if consecutive misses is lower than end association threshold
-            elif self.num_consecutive_misses < self.consecutive_misses_end_association:
-                self.num_consecutive_misses += 1
-                self.num_consecutive_hits = 0
-                return True
+            elif association_info.num_consecutive_misses < self.consecutive_misses_end_association:
+                association_info.num_consecutive_misses += 1
+                association_info.num_consecutive_hits = 0
+                return association_info
             # don't associate and reset number of consecutive hits
             else:
-                self.associated = False
-                self.num_consecutive_misses = 0  # reset as association is cancelled
-                self.num_consecutive_hits = 0
-                return self.associated
+                association_info.associated = False
+                association_info.num_consecutive_misses = 0  # reset as association is cancelled
+                association_info.num_consecutive_hits = 0
+                return association_info
         else:
             if distance < self.association_distance_threshold:
-                self.num_consecutive_hits += 1
-                self.associated = self.num_consecutive_hits >= self.consecutive_hits_confirm_association
-                return self.associated
+                association_info.num_consecutive_hits += 1
+                association_info.associated = association_info.num_consecutive_hits >= self.\
+                    consecutive_hits_confirm_association
+                return association_info
             else:
-                self.num_consecutive_misses += 1  # not really necessary
-                self.num_consecutive_hits = 0
-                return False
+                association_info.num_consecutive_misses += 1  # not really necessary
+                association_info.num_consecutive_hits = 0
+                return association_info
