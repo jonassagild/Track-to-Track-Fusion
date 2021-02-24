@@ -24,7 +24,7 @@ class CountingAssociator:
         # self.num_consecutive_hits = 0
         # self.num_consecutive_misses = 0
 
-    def associate_tracks(self, tracks1, tracks2, association_info, **kwargs):
+    def associate_tracks(self, mean_track1, mean_track2, association_info, **kwargs):
         """
         Checks for association using the counting technique. The algorithm is described in detail in the report.
 
@@ -32,14 +32,15 @@ class CountingAssociator:
         last state in the tracks lists. Another method should be used if one want to evaluate association based on e.g.
         the last 5 states in the tracks list, and only that (i.e., use no other information than the x last states).
 
-        :param tracks1:
-        :param tracks2:
+        :param mean_track1: array(4,1)
+        :param mean_track2: array(4,1)
         :param association_info: object of type CountingAssociationInfo
         :return: true to the last element of tracks1 and tracks2 are considered associated, and false if they are not
         considered associated
         """
         # calculate the euclidean distance between the last state of the tracks
-        distance = numpy.linalg.norm(tracks1[-1].state_vector - tracks2[-1].state_vector)
+        distance = numpy.linalg.norm(mean_track1 - mean_track2)
+        association_info.euclidean_distance = distance
 
         # todo: implement the logic specified
         if association_info.associated:
@@ -60,6 +61,7 @@ class CountingAssociator:
         else:
             if distance < self.association_distance_threshold:
                 association_info.num_consecutive_hits += 1
+                association_info.num_consecutive_misses = 0
                 association_info.associated = association_info.num_consecutive_hits >= self.\
                     consecutive_hits_confirm_association
                 return association_info
