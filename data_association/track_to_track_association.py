@@ -28,21 +28,20 @@ def test_association_independent_tracks(track1, track2, alpha=0.05):
     return d <= d_alpha
 
 
-def test_association_dependent_tracks(track1, track2, cross_cov_ij, cross_cov_ji, alpha=0.05):
+def test_association_dependent_tracks(track1_mean, track1_cov, track2_mean, track2_cov, cross_cov_ij, cross_cov_ji,
+                                      alpha=0.95):
     """
     checks whether the tracks are from the same target, when the dependence is accounted for.
     :param track1: track to check for association
     :param track2: track to check for association
     :param cross_cov_ij: cross-covariance of the estimation errors. See article
     :param cross_cov_ji:
-    :param alpha:desired confidence interval
+    :param alpha: desired test power
     :return: true if the tracks are from the same target, false else
     """
-    delta_estimates = track1.state_vector - track2.state_vector
+    delta_estimates = track1_mean - track2_mean
     error_delta_estimates = delta_estimates  # as the difference of the true states is 0 if it is the same target
-    error_delta_estimates_covar = track1.covar + track2.covar - cross_cov_ij - cross_cov_ji  # under the error
-    # independence
-    # assumption
+    error_delta_estimates_covar = track1_cov + track2_cov - cross_cov_ij - cross_cov_ji
 
     d = (error_delta_estimates.transpose() @ np.linalg.inv(error_delta_estimates_covar) @ error_delta_estimates)[0]
 
