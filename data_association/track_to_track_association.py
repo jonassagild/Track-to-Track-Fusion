@@ -29,7 +29,7 @@ def test_association_independent_tracks(track1, track2, alpha=0.05):
 
 
 def test_association_dependent_tracks(track1_mean, track1_cov, track2_mean, track2_cov, cross_cov_ij, cross_cov_ji,
-                                      alpha=0.95):
+                                      alpha=0.05):
     """
     checks whether the tracks are from the same target, when the dependence is accounted for.
     :param track1: track to check for association

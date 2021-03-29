@@ -29,7 +29,7 @@ class HypothesisTestDependenceAssociator:
     Uses the hypothesis test derived by Bar-Shalom to check whether two tracks originate from the same target
     """
 
-    def __init__(self, alpha=0.95):
+    def __init__(self, alpha=0.05):
         """
 
         """
