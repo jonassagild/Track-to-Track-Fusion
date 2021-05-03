@@ -56,3 +56,22 @@ def fuse_dependent_tracks(track1, track2, cross_covar_ij, cross_covar_ji):
     # fused = GaussianStateUpdate(fused_posterior, fused_covar)
     # todo return an object and not only the posterior and covar
     return fused_posterior, fused_covar
+
+
+def fuse_independent_track_estimates(t1_cov, t1_mean, t2_cov, t2_mean):
+    """
+    fuses the tracks under the independence assumption
+    :return:
+    """
+    P_j = t1_cov  # covar sensor j
+    P_i = t2_cov  # covar sensor i
+    x_j = t1_mean  # posterior sensor j
+    x_i = t2_mean  # posterior sensor i
+
+    # fusion equation under the error independence assumption
+    fused_posterior = P_j @ np.linalg.inv(P_i + P_j) @ x_i + P_i @ np.linalg.inv(P_i + P_j) @ x_j
+
+    # covariance fusion equation
+    fused_covar = P_i @ np.linalg.inv(P_i + P_j) @ P_j
+
+    return fused_posterior, fused_covar
